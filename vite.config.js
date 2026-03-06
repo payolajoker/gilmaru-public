@@ -20,7 +20,7 @@ function copyServiceWorker() {
 
 export default defineConfig({
   root: './',
-  base: '/gilmaru/',
+  base: '/gilmaru-public/',
   build: {
     outDir: 'dist',
   },

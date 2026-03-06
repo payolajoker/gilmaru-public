@@ -27,6 +27,6 @@ git push
 echo.
 echo ==============================================
 echo 배포가 완료되었습니다! 
-echo 잠시 후 https://payolajoker.github.io/gilmaru/ 에서 확인하세요.
+echo 잠시 후 https://payolajoker.github.io/gilmaru-public/ 에서 확인하세요.
 echo ==============================================
 pause

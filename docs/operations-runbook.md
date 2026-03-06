@@ -3,8 +3,8 @@
 
 ## 운영 개요
 - 배포 대상: GitHub Pages 단일 경로
-- 공개 URL: `https://payolajoker.github.io/gilmaru/`
-- Vite base: `/gilmaru/`
+- 공개 URL: `https://payolajoker.github.io/gilmaru-public/`
+- Vite base: `/gilmaru-public/`
 - Owner: `Payola Joker`
 - 연락 채널: `TBD`
 
@@ -38,9 +38,7 @@ npm run preview
 ```
 
 ### Deploy
-```bash
-npm run deploy
-```
+`main` 브랜치 push 시 `.github/workflows/pages.yml` 이 GitHub Pages를 자동 배포합니다.
 
 ## 릴리스 절차
 ### 1) 사전 체크
@@ -65,7 +63,7 @@ npm run deploy
 
 ## 장애 대응
 ### 1차 점검
-- 정적 자산 경로(`/gilmaru/`) 확인
+- 정적 자산 경로(`/gilmaru-public/`) 확인
 - 최근 배포 커밋과 증상 연관 확인
 - 브라우저 강력 새로고침/서비스워커 갱신 안내
 
