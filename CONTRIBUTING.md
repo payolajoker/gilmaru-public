@@ -1,18 +1,18 @@
 # Contributing
 
-This staging bundle is meant for safe-publication review.
+Scope of contributions:
 
-Rules for contributions:
-
-- Do not add `word_data.js`, TOPIK CSV, MeCab CSV, or derived word-list outputs.
-- Keep demo data hand-written or sourced from clearly redistributable material.
-- Prefer small, reviewable pull requests.
-- If you add a new asset, document its provenance in `docs/rights-inventory.md`.
-- If you touch naming or branding, check the future trademark policy first.
-
-Recommended commit scope:
-
+- application code
 - engine logic
-- demo UI
 - tests
 - docs
+- word data and generation scripts
+
+Rules:
+
+- Do not commit local keys or local config files.
+- If you change word data, explain provenance and transformation steps in the
+  pull request.
+- Keep pull requests reviewable and focused.
+- Respect third-party terms for Kakao and other dependencies.
+- If you add new assets, update the license or notice docs when needed.

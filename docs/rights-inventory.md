@@ -8,6 +8,7 @@
 - 판단 기준은 `2026-03-06` 기준 로컬 저장소와 `git ls-files`로 확인된 추적 파일이다.
 - `.gitignore`에 걸리는 로컬 산출물과 미추적 파일은 본문 맨 아래 별도 메모로만 다룬다.
 - 출처나 허가가 문서화되지 않은 자산은 보수적으로 `미확인` 또는 `보류`로 처리한다.
+- `2026-03-07` 기준으로 유지보수자가 현재 추적 중인 단어 데이터와 생성 산출물이 합법적으로 공개 가능하다고 확인했으며, 아래 표는 그 전제를 반영해 갱신한다.
 
 ## 1. 현재 상태 요약
 
@@ -39,14 +40,18 @@
 - 위 파일들에서 파생된 형용사/명사 목록
 - 최종 단어셋과 `word_data.js`
 
-이 그룹은 공익 오픈소스 전환에서 가장 민감하다.
-현재 저장소 안에 `업스트림 라이선스 증빙`이 없으므로, 재라이선스 가능하다고 가정하면 안 된다.
+이 그룹은 원래 가장 민감한 영역이었지만, 현재는 유지보수자 확인 전제를 반영해 공개 가능 자산으로 본다.
+다만 원출처 메모와 생성 경로 문서화는 계속 유지하는 편이 좋다.
 
 ## 2. 판단 레이블
 
 - `즉시 공개 가능(초안)`: 저장소 작성물이 명확하고 외부 권리 문제가 상대적으로 적음
 - `조건부 공개`: 자체 작성물로 보이지만 외부 서비스/패키지/상표/약관 영향이 있음
 - `보류`: 외부 데이터 또는 출처 미확인 자산. 라이선스 확인 전 재배포/재라이선스 금지
+
+보충 표기:
+
+- `즉시 공개 가능(maintainer 확인)`: 유지보수자가 공개 가능 여부를 직접 확인한 자산
 
 ## 3. 권리관계 표
 
@@ -62,13 +67,13 @@
 | npm 의존 패키지 기록 | `package-lock.json` | 외부 패키지 메타데이터 | 조건부 공개 | 중간 | 자체 라이선스 문서 대상은 아니고, 업스트림 고지/NOTICE가 필요 |
 | Kakao SDK/Places 연동 | `app.js`의 Kakao SDK URL 및 지도/장소 검색 연동 | 외부 서비스 | 조건부 공개 | 높음 | Kakao 약관과 도메인 등록 조건의 영향을 받음. 저장소 코드는 공개 가능해도 SDK 자체를 재라이선스할 수는 없음 |
 | 웹폰트/아이콘/유틸 CDN | `index.html`의 Pretendard, Material Icons, QRCode.js, html2canvas 링크 | 외부 오픈소스/외부 서비스 | 조건부 공개 | 중간 | 사용 가능 라이선스가 확인되는 자산이 많지만, 고지와 버전 고정이 필요 |
-| TOPIK 원본 데이터 | `topik_vocabulary_combined.csv` | 외부 데이터 | 보류 | 매우 높음 | CSV 헤더에 `learning-korean.com`과 PDF/URL 출처가 명시돼 있음. 공개 라이선스는 확인되지 않음 |
-| MeCab 기반 원본 데이터 | `mecab_nng.csv`, `mecab_nnp.csv`, `mecab_va.csv` | 외부 데이터 또는 외부 사전 추출물 | 보류 | 매우 높음 | `mecab-ko-dic` 계열일 가능성은 높지만, 현재 저장소 파일의 provenance가 문서화돼 있지 않음 |
-| TOPIK 파생 목록 | `topik1_adjectives.txt` | `topik_vocabulary_combined.csv` 파생 | 보류 | 매우 높음 | `analyze_adjectives.py`가 CSV에서 추출 |
-| MeCab 파생 목록 | `mecab_positive_adjectives.txt` | `mecab_va.csv` 파생 | 보류 | 매우 높음 | `extract_mecab_adjectives.py`가 CSV에서 추출 |
-| 형용사 중간 산출물 | `adjective_analysis.txt`, `clean_adjectives_top200.txt`, `combined_adjectives.txt`, `final_adjectives_146.txt`, `final_adjectives_clean.txt`, `final_adjectives_refined.txt` | TOPIK/MeCab 혼합 파생 | 보류 | 매우 높음 | 수동 선별이 포함돼도 원천 데이터 제약이 따라올 수 있음 |
-| 명사/카테고리 중간 산출물 | `wordA_generated.txt`, `wordB_generated.txt`, `wordC_generated.txt`, `wordD_generated.txt`, `wordA_final.txt`, `wordB_final.txt`, `wordC_final.txt`, `wordD_final.txt` | TOPIK/MeCab 혼합 파생 | 보류 | 매우 높음 | `generate_quality_words.py`, `categorize_nouns.py`, `auto_generate_categories.py` 등과 연결됨 |
-| 최종 단어 데이터 | `word_data.js` | 외부 데이터 기반 최종 산출물 | 보류 | 매우 높음 | 앱 핵심 데이터지만 현 상태로는 별도 라이선스 확정 불가 |
+| TOPIK 원본 데이터 | `topik_vocabulary_combined.csv` | 외부 데이터 | 즉시 공개 가능(maintainer 확인) | 높음 | 유지보수자 확인 전제를 반영한다. 공개 저장소에 포함 가능 |
+| MeCab 기반 원본 데이터 | `mecab_nng.csv`, `mecab_nnp.csv`, `mecab_va.csv` | 외부 데이터 또는 외부 사전 추출물 | 즉시 공개 가능(maintainer 확인) | 높음 | 유지보수자 확인 전제를 반영한다. 원출처 메모는 계속 가치가 있다 |
+| TOPIK 파생 목록 | `topik1_adjectives.txt` | `topik_vocabulary_combined.csv` 파생 | 즉시 공개 가능(maintainer 확인) | 높음 | 공개 저장소에 함께 둘 수 있다 |
+| MeCab 파생 목록 | `mecab_positive_adjectives.txt` | `mecab_va.csv` 파생 | 즉시 공개 가능(maintainer 확인) | 높음 | 공개 저장소에 함께 둘 수 있다 |
+| 형용사 중간 산출물 | `adjective_analysis.txt`, `clean_adjectives_top200.txt`, `combined_adjectives.txt`, `final_adjectives_146.txt`, `final_adjectives_clean.txt`, `final_adjectives_refined.txt` | TOPIK/MeCab 혼합 파생 | 즉시 공개 가능(maintainer 확인) | 높음 | 재현 가능한 생성 파이프라인 자료로 공개 가능 |
+| 명사/카테고리 중간 산출물 | `wordA_generated.txt`, `wordB_generated.txt`, `wordC_generated.txt`, `wordD_generated.txt`, `wordA_final.txt`, `wordB_final.txt`, `wordC_final.txt`, `wordD_final.txt` | TOPIK/MeCab 혼합 파생 | 즉시 공개 가능(maintainer 확인) | 높음 | 공개 저장소에 함께 둘 수 있다 |
+| 최종 단어 데이터 | `word_data.js` | 외부 데이터 기반 최종 산출물 | 즉시 공개 가능(maintainer 확인) | 높음 | 앱 핵심 데이터이며 공개 저장소에 포함 가능 |
 | 단어 처리 스크립트 | `analyze_adjectives.py`, `extract_mecab_adjectives.py`, `generate_quality_words.py`, `categorize_nouns.py`, `auto_generate_categories.py`, `refine_word_data.py`, 기타 검사 스크립트 | 저장소 작성물로 보임 | 조건부 공개 | 높음 | 스크립트 자체는 1차 저작물로 보이지만 외부 데이터를 입력으로 사용 |
 
 ## 4. 근거 메모
@@ -106,7 +111,7 @@
 - `공부용으로 다운로드하고 사용해도 된다`는 표현은 존재한다.
 - 그러나 `수정`, `재배포`, `상업적 재사용`, `2차 저작물 배포` 허가로 해석할 근거는 부족하다.
 
-따라서 `topik_vocabulary_combined.csv`와 그 파생물은 현재 기준으로 `오픈소스 저장소에 포함된 공개 데이터`로 취급하면 안 된다.
+다만 현재는 유지보수자가 공개 가능 여부를 직접 확인했다고 전제하므로, 이 파일과 파생물은 `오픈 저장소 포함 가능 자산`으로 재분류한다.
 
 ### 4-3. MeCab 데이터 근거
 
@@ -128,7 +133,7 @@
 - 다만 현재 저장소의 `mecab_*.csv`가 정확히 어떤 버전에서 어떤 과정을 거쳐 만들어졌는지 기록이 없다.
 - 따라서 `이 파일들이 Apache-2.0 조건을 만족한다`고 지금 바로 단정하면 안 된다.
 
-즉, `mecab_*.csv`는 `즉시 공개 가능`이 아니라 `공식 원본에서 다시 생성하면 살릴 수 있는 후보`로 보는 게 맞다.
+다만 현재는 유지보수자가 공개 가능 여부를 직접 확인했다고 전제하므로, `mecab_*.csv` 역시 공개 저장소 포함 가능 자산으로 본다.
 
 ### 4-4. 파생 관계 근거
 
@@ -209,40 +214,41 @@
 
 ## 5. 즉시 할 일
 
-### 1단계. 바로 공개 가능한 영역 분리
+### 1단계. 공개 저장소 구조 확정
 
-우선 아래만 별도 오픈 전환 대상으로 묶는 것이 맞다.
+우선 아래를 실제 공개 저장소에 함께 두는 쪽으로 정리하는 것이 맞다.
 
 - 앱 코드
 - 테스트 코드
 - 빌드/배포 스크립트
 - 문서
-- 아이콘과 자체 제작 UI 자산
+- 단어 데이터
+- 단어 생성 스크립트와 중간 산출물
 
-### 2단계. 보류 자산 묶음 분리
+### 2단계. 계속 경계 표시가 필요한 영역
 
-아래는 별도 디렉터리나 문서 정책으로 경계 표시가 필요하다.
+아래는 공개 가능하더라도 별도 고지나 조건 정리가 필요하다.
 
-- `topik_vocabulary_combined.csv`
-- `mecab_*.csv`
-- 모든 단어 파생 `.txt`
-- `word_data.js`
+- Kakao SDK/Places 연동
+- 외부 CDN 자산
+- 프로젝트 이름과 브랜딩
 
-### 3단계. 꼭 필요한 조사 항목
+### 3단계. 계속 문서화하면 좋은 항목
 
-- `topik_vocabulary_combined.csv`의 원본 배포 허가 범위 또는 대체 데이터 소스
-- MeCab CSV의 원본 사전 이름과 라이선스, 그리고 생성 절차
-- `word_data.js`를 완전히 재현 가능한 방식으로 다시 생성할 수 있는지
+- TOPIK/MeCab 관련 원출처 메모
+- 단어셋 생성 절차
+- `word_data.js` 갱신 절차
 - SVG/목업/발표 자료의 외부 리소스 사용 여부
 
 ### 4단계. 현재 시점의 실무 판단
 
-바로 열어도 되는 쪽:
+바로 공개 저장소에 포함 가능한 쪽:
 
 - 코드
 - 문서
 - 테스트
 - 빌드 스크립트
+- 단어 데이터와 파생 산출물
 
 주의 표시를 달고 유지 가능한 쪽:
 
@@ -252,26 +258,16 @@
 - QRCode.js
 - html2canvas
 
-오픈 릴리스에서 빼는 것이 안전한 쪽:
-
-- `topik_vocabulary_combined.csv`
-- `mecab_*.csv`
-- 모든 단어 파생 `.txt`
-- `word_data.js`
-
-단, `word_data.js`는 앱 실행 핵심이므로 즉시 제거가 아니라 `대체 데이터 확보 전까지 비공개/분리` 또는 `임시 폐쇄 영역` 전략이 필요하다.
-
 ## 6. 권장 결론
 
-현재 기준으로 길마루를 오픈소스로 바로 전환할 때, 가장 안전한 판단은 아래다.
+현재 기준으로 길마루를 오픈소스로 전환할 때, 가장 실무적인 판단은 아래다.
 
-- `코드와 문서`: 상대적으로 빠르게 정리 가능
+- `코드와 문서`: 공개 전환 가능
+- `단어 데이터 체계`: 유지보수자 확인 전제하에 공개 전환 가능
 - `Kakao 및 외부 CDN 의존`: 사용 조건 정리 필요
-- `단어 데이터 체계`: 가장 큰 보류 영역
-- `TOPIK 데이터`: permission 없이는 사실상 교체 대상
-- `MeCab 데이터`: 공식 Apache-2.0 원본에서 재생성하면 살릴 가능성이 있음
+- `핵심 남은 이슈`: 외부 서비스 약관, 라이선스 문서화, 공개 저장소 운영 구조
 
-즉, 길마루의 권리관계 정리에서 핵심 병목은 `앱 코드`가 아니라 `단어 데이터와 그 생성 출처`다.
+즉, 현재 남은 핵심 작업은 `데이터 제거`가 아니라 `공개 저장소 운영 문서와 라이선스 구조 확정`이다.
 
 ## 8. 조사 출처
 

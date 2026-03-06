@@ -1,34 +1,68 @@
-# Gilmaru Public Release Staging Bundle
+# 길마루 (Gilmaru)
 
-This directory contains a safe subset of the Gilmaru repository that can be reviewed, shared, or moved into a separate repository without the blocked word-data assets.
+길마루는 지도 좌표를 4개의 한글 단어 주소로 표현하는 웹앱입니다.
+이 공개 저장소에는 실제 앱 코드, 단어 데이터, 생성 스크립트, 테스트, 공개
+프로젝트 문서가 함께 들어갑니다.
 
-Included:
-- Pure engine code with no bundled runtime word database
-- Tiny sample word pack curated from the current runtime groups
-- Standalone browser demo with no Kakao dependency
-- Engine-focused tests
-- Public-interest and licensing strategy documents
+## 포함 범위
 
-Excluded:
-- `word_data.js`
-- `topik_vocabulary_combined.csv`
-- `mecab_*.csv`
-- Derived word lists and runtime word outputs
-- Kakao-dependent application shell
+- 실제 앱 런타임: `app.js`, `gilmaru_core.js`, `word_data.js`
+- 순수 엔진: `gilmaru_engine.js`
+- 실제 단어 데이터와 생성 파이프라인: `*.csv`, `*.txt`, `*.py`
+- 테스트: Vitest + Playwright
+- PWA 구성과 정적 자산
+- 공익 오픈소스 전환 문서
 
-This bundle is a staging structure, not the final public repository. Final licensing still depends on the rights review in `docs/rights-inventory.md`.
-
-## Quick Start
+## 빠른 시작
 
 ```bash
 npm install
 npm run dev
-npm run test
+```
+
+선택 설정:
+
+- `VITE_KAKAO_JS_KEY`
+- `gilmaru.config.local.json`
+
+예시 파일:
+
+- `.env.example`
+- `gilmaru.config.local.example.json`
+
+## 테스트와 빌드
+
+```bash
+npm run test -- --run
+npm run test:e2e
 npm run build
 ```
 
-## What This Bundle Demonstrates
+## 라이선스 구조
 
-- The Gilmaru engine can run without the blocked runtime word database
-- A curated sample word pack can be injected into the resolver
-- A separate public repository can begin as engine-plus-demo before the final data strategy is settled
+- 코드와 스크립트: `AGPL-3.0-or-later`
+- 단어 데이터: `ODbL-1.0`
+- 문서: `CC BY-SA 4.0`
+
+자세한 내용:
+
+- [LICENSE](./LICENSE)
+- [NOTICE](./NOTICE)
+- [TRADEMARKS.md](./TRADEMARKS.md)
+- [코드 라이선스 안내](./docs/licenses/code.md)
+- [데이터 라이선스 안내](./docs/licenses/data.md)
+- [문서 라이선스 안내](./docs/licenses/docs.md)
+
+## 문서
+
+- [공익 오픈소스 선언문](./docs/public-good-manifesto.md)
+- [오픈 라이선스 전략](./docs/open-license-strategy.md)
+- [권리관계 표](./docs/rights-inventory.md)
+- [커뮤니티 로드맵](./docs/community-roadmap.md)
+- [공개 구조 메모](./docs/public-release-structure.md)
+
+## 주의
+
+- Kakao Maps JavaScript SDK와 Places는 별도 약관과 도메인 등록 조건이 있습니다.
+- 현재 공개 전환은 저장소 작성물과 추적 데이터 전체를 대상으로 하지만,
+  외부 서비스 약관은 그대로 존중해야 합니다.

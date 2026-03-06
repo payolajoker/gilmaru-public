@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>길마루 아이콘 생성기</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #fdf4ff 0%, #f5f3ff 100%);
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .icons-container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .icon-box {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+        }
+
+        .icon-box h3 {
+            margin: 15px 0 10px;
+            color: #333;
+        }
+
+        canvas {
+            border-radius: 28px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .note {
+            margin-top: 40px;
+            padding: 20px 30px;
+            background: white;
+            border-radius: 16px;
+            color: #6b7280;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            text-align: left;
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🗺️ 길마루 아이콘 생성기</h1>
+    <p>아이콘을 다운로드하여 <code>icons/</code> 폴더에 저장하세요</p>
+
+    <div class="icons-container">
+        <div class="icon-box">
+            <canvas id="canvas-192" width="192" height="192"></canvas>
+            <h3>icon-192.png</h3>
+            <button onclick="download(192)">다운로드</button>
+        </div>
+        <div class="icon-box">
+            <canvas id="canvas-512" width="512" height="512"></canvas>
+            <h3>icon-512.png</h3>
+            <button onclick="download(512)">다운로드</button>
+        </div>
+    </div>
+
+    <div class="note">
+        <strong>📌 사용 방법</strong><br><br>
+        1. 각 버튼을 클릭하여 아이콘 다운로드<br>
+        2. <code>icons/</code> 폴더에 저장<br>
+        3. 이 파일은 삭제해도 OK
+    </div>
+
+    <script>
+        function drawIcon(ctx, size) {
+            const s = size / 512;
+
+            // Background gradient (purple to pink)
+            const bgGrad = ctx.createLinearGradient(0, 0, size, size);
+            bgGrad.addColorStop(0, '#8b5cf6');
+            bgGrad.addColorStop(0.5, '#a855f7');
+            bgGrad.addColorStop(1, '#ec4899');
+
+            // Rounded rectangle
+            const r = 112 * s;
+            ctx.beginPath();
+            ctx.moveTo(r, 0);
+            ctx.lineTo(size - r, 0);
+            ctx.quadraticCurveTo(size, 0, size, r);
+            ctx.lineTo(size, size - r);
+            ctx.quadraticCurveTo(size, size, size - r, size);
+            ctx.lineTo(r, size);
+            ctx.quadraticCurveTo(0, size, 0, size - r);
+            ctx.lineTo(0, r);
+            ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath();
+            ctx.fillStyle = bgGrad;
+            ctx.fill();
+
+            // Subtle grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1.5 * s;
+            [170, 342].forEach(pos => {
+                const p = pos * s;
+                ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, size); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(size, p); ctx.stroke();
+            });
+
+            const cx = size / 2;
+            const cy = size / 2;
+
+            // Shadow
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.25)';
+            ctx.shadowBlur = 24 * s;
+            ctx.shadowOffsetY = 8 * s;
+
+            // Pin body
+            const pinGrad = ctx.createLinearGradient(cx, cy - 160 * s, cx, cy + 200 * s);
+            pinGrad.addColorStop(0, '#ffffff');
+            pinGrad.addColorStop(1, '#fdf4ff');
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 160 * s);
+            ctx.bezierCurveTo(cx - 88 * s, cy - 160 * s, cx - 160 * s, cy - 88 * s, cx - 160 * s, cy);
+            ctx.bezierCurveTo(cx - 160 * s, cy + 88 * s, cx, cy + 200 * s, cx, cy + 200 * s);
+            ctx.bezierCurveTo(cx, cy + 200 * s, cx + 160 * s, cy + 88 * s, cx + 160 * s, cy);
+            ctx.bezierCurveTo(cx + 160 * s, cy - 88 * s, cx + 88 * s, cy - 160 * s, cx, cy - 160 * s);
+            ctx.closePath();
+            ctx.fillStyle = pinGrad;
+            ctx.fill();
+            ctx.restore();
+
+            // Center circle with gradient
+            const circleY = cy - 20 * s;
+            const circleGrad = ctx.createLinearGradient(cx - 60 * s, circleY - 60 * s, cx + 60 * s, circleY + 60 * s);
+            circleGrad.addColorStop(0, '#8b5cf6');
+            circleGrad.addColorStop(1, '#ec4899');
+
+            ctx.beginPath();
+            ctx.arc(cx, circleY, 60 * s, 0, Math.PI * 2);
+            ctx.fillStyle = circleGrad;
+            ctx.fill();
+
+            // Inner white dot
+            ctx.beginPath();
+            ctx.arc(cx, circleY, 24 * s, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+        }
+
+        function download(size) {
+            const canvas = document.getElementById(`canvas-${size}`);
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        window.onload = () => {
+            [192, 512].forEach(size => {
+                const canvas = document.getElementById(`canvas-${size}`);
+                drawIcon(canvas.getContext('2d'), size);
+            });
+        };
+    </script>
+</body>
+
+</html>

@@ -1,14 +1,22 @@
 # Open Status
 
-This repository candidate is not yet the final open-source release of Gilmaru.
+Current release mode: full public repository candidate
 
-Current status:
+Included in the public export:
 
-- Safe to review: core engine, sample data, tests, manifesto, roadmap, rights notes
-- Still blocked: runtime word database, TOPIK-derived assets, MeCab-derived assets, Kakao-bound application shell
+- actual application code
+- tracked word data
+- tracked word-generation scripts
+- tests and build tooling
+- public-interest documentation
 
-Before public launch:
+Maintainer confirmation:
 
-1. Finalize asset-by-asset provenance review
-2. Choose and apply final LICENSE / NOTICE files
-3. Decide whether the first public repository ships as engine-only or engine-plus-safe-demo
+- As of `2026-03-07`, the maintainer has confirmed that the current tracked word
+  data in this repository is lawful to publish and reuse.
+
+Remaining non-open constraints:
+
+- Kakao SDK / Places still follows Kakao terms
+- third-party libraries and fonts keep their own licenses
+- branding is still governed by `TRADEMARKS.md`

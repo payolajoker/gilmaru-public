@@ -1,0 +1,21 @@
+{
+  "name": "길마루 - 한글 주소 시스템",
+  "short_name": "길마루",
+  "description": "대한민국 어디든 4단어로 표현하는 새로운 한글 주소 시스템",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

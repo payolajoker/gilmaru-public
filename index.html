@@ -1,145 +1,213 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gilmaru Public Release</title>
-    <meta
-      name="description"
-      content="길마루 공개용 코어 엔진과 샘플 단어 팩을 확인하는 데모 페이지"
-    />
-    <link rel="stylesheet" href="./src/demo.css" />
-  </head>
-  <body>
-    <div class="atlas-noise" aria-hidden="true"></div>
-    <header class="hero">
-      <p class="hero-kicker">Public Release Staging Bundle</p>
-      <div class="hero-grid">
-        <div class="hero-copy">
-          <h1>길마루를 공익 오픈 인프라로 분리하는 첫 번째 묶음</h1>
-          <p class="hero-body">
-            이 데모는 외부 단어 DB와 지도 SDK를 제거한 뒤에도 남는 순수 엔진이
-            어떻게 동작하는지 보여준다. 지금 보이는 주소와 문장은 모두 실제
-            운영 단어 그룹에서 감성적으로 골라낸 대표 샘플 4개만으로 나온다.
-          </p>
-          <div class="hero-tags" aria-label="핵심 속성">
-            <span>지도 SDK 없음</span>
-            <span>샘플 데이터만 사용</span>
-            <span>별도 저장소 후보</span>
-          </div>
-        </div>
-        <aside class="hero-panel">
-          <p class="hero-panel-label">Release Boundary</p>
-          <ul>
-            <li>포함: 엔진, 샘플 데이터, 테스트, 정책 문서</li>
-            <li>제외: Kakao 쉘, TOPIK, MeCab, 파생 단어 데이터</li>
-          </ul>
-          <a class="hero-link" href="./EXCLUDED_ASSETS.md">제외 자산 보기</a>
-        </aside>
+
+<head>
+  <meta charset="UTF-8">
+  <title>길마루 - 한글 주소 시스템</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="대한민국 어디든 4단어로 표현하는 새로운 주소 시스템">
+
+  <!-- Open Graph / SEO -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="길마루 - 한글 주소 시스템">
+  <meta property="og:description" content="대한민국 어디든 4단어로 표현하는 새로운 주소 시스템. 나만의 쉬운 주소를 만들어보세요.">
+  <meta property="og:image" content="https://payolajoker.github.io/gilmaru/icons/icon.svg">
+  <meta property="og:url" content="https://payolajoker.github.io/gilmaru/">
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3B82F6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="길마루">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+  <a class="skip-link" href="#search-input">검색으로 바로가기</a>
+
+  <!-- Map Area -->
+  <div id="map-container">
+    <div id="map" role="application" aria-label="길마루 지도"></div>
+    <canvas id="grid-canvas"></canvas>
+
+    <!-- Central Maker (Static Pin) -->
+    <div id="center-marker">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+      </svg>
+    </div>
+  </div>
+
+  <!-- Top Search Bar -->
+  <div class="search-container" role="search">
+    <div class="search-box">
+      <label for="search-input" class="sr-only">위치 또는 길마루 주소 검색</label>
+      <input type="text" id="search-input" class="search-input" placeholder="장소 또는 길마루 주소 검색 (예: 강남역)"
+        autocomplete="off" name="query" role="combobox" aria-autocomplete="list" aria-controls="search-results"
+        aria-expanded="false" aria-activedescendant="" aria-haspopup="listbox" aria-label="장소 또는 길마루 주소 검색">
+      <button class="search-btn" aria-label="검색">
+        <span class="material-icons">search</span>
+      </button>
+      <div class="search-divider"></div>
+      <button class="search-btn btn-intro-highlight" id="btn-intro" title="길마루 소개" aria-label="길마루 소개 열기"
+        aria-haspopup="dialog">
+        <span class="material-icons">help_outline</span>
+      </button>
+    </div>
+    <!-- Autocomplete Results -->
+    <div id="search-results" class="search-results" role="listbox" aria-label="검색 결과" style="display:none;"></div>
+    <div id="search-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <!-- Right Floating Buttons -->
+  <div class="fab-container">
+    <button class="fab" id="btn-my-location" title="내 위치" aria-label="내 위치로 이동">
+      <span class="material-icons">my_location</span>
+    </button>
+  </div>
+
+  <!-- Zoom Indicator -->
+  <div id="zoom-indicator">
+    <span class="material-icons zoom-icon">zoom_in</span>
+    <span id="zoom-level">Zoom: -</span>
+  </div>
+
+  <!-- App Version -->
+  <div id="app-version">Gilmaru v1.7.7</div>
+
+  <!-- Bottom Sheet (Address Display) -->
+  <div class="bottom-sheet">
+    <div class="address-card">
+      <div class="place-name" id="place-name"></div>
+      <div class="address-label">현재 위치의 길마루 주소</div>
+      <button type="button" class="gilmaru-address gilmaru-address-btn" id="address-text" title="클릭하여 복사"
+        aria-label="길마루 주소 복사">
+        로딩중...
+      </button>
+      <div class="address-hint">주소를 누르면 복사됩니다.</div>
+      <div class="sentence-address" id="sentence-text"></div>
+      <div class="road-address" id="road-address"></div>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="btn-share" aria-label="주소 공유하기">
+          <span class="material-icons">share</span> 공유하기
+        </button>
+        <button class="btn btn-secondary" id="btn-copy" aria-label="주소 복사">
+          <span class="material-icons">content_copy</span> 복사
+        </button>
+        <button class="btn btn-secondary" id="btn-qr" aria-label="QR 코드 보기">
+          <span class="material-icons">qr_code_2</span> QR
+        </button>
       </div>
-    </header>
+    </div>
+  </div>
 
-    <main class="layout">
-      <section class="card card-input" aria-labelledby="coords-heading">
-        <div class="card-header">
-          <p class="card-index">01</p>
-          <div>
-            <h2 id="coords-heading">좌표에서 샘플 길마루 주소 만들기</h2>
-            <p>샘플 데이터 팩 기준으로 코드를 만들고 주소와 문장을 확인한다.</p>
+  <!-- Toast Notification -->
+  <div id="toast" role="alert" aria-live="polite">메시지</div>
+
+  <!-- Intro Modal -->
+  <div id="intro-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title"
+    aria-hidden="true" tabindex="-1">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="intro-modal-title">길마루란?</h3>
+        <button id="btn-close-intro" class="close-btn" aria-label="길마루 소개 닫기"><span
+            class="material-icons">close</span></button>
+      </div>
+      <div class="modal-content">
+        <p class="intro-main-text">
+          <b>"반달 자리 응원 햇볕"</b><br>
+          대한민국 <span class="highlight">모든 곳</span>을<br>
+          <span class="highlight">4개의 단어</span>로 기억하세요.
+        </p>
+
+        <div class="comparison-box">
+          <div class="comp-item">
+            <div class="comp-label">What3Words (w3w)</div>
+            <div class="comp-desc">"사과.바나나.책상"</div>
+            <div class="comp-note">순서가 바뀌면 다른 위치</div>
+          </div>
+          <div class="comp-vs">VS</div>
+          <div class="comp-item highlight-item">
+            <div class="comp-label">길마루 (Gilmaru)</div>
+            <div class="comp-desc">"반달이 자리에서<br>응원과 햇볕"</div>
+            <div class="comp-note">순서를 섞어도 <b>같은 위치</b></div>
           </div>
         </div>
 
-        <form id="coords-form" class="field-grid">
-          <label class="field">
-            <span>위도</span>
-            <input id="lat-input" name="lat" type="number" step="0.0001" value="37.5665" />
-          </label>
-          <label class="field">
-            <span>경도</span>
-            <input id="lng-input" name="lng" type="number" step="0.0001" value="126.9780" />
-          </label>
-          <button class="action-button" type="submit">샘플 주소 생성</button>
-        </form>
+        <ul class="intro-features">
+          <li><span class="material-icons intro-icon">auto_awesome</span> <b>감성 주소</b>: 외우기 쉬운 한글 문장</li>
+          <li><span class="material-icons intro-icon">menu_book</span> <b>쉬운 단어</b>: TOPIK 1~3급 기초 어휘 사용</li>
+          <li><span class="material-icons intro-icon">shuffle</span> <b>순서 무관</b>: 단어 순서를 섞어도 찰떡같이 인식</li>
+          <li><span class="material-icons intro-icon">gps_fixed</span> <b>10m 정밀도</b>: 만남의 장소, 입구 찾기에 최적</li>
+          <li><span class="material-icons intro-icon">volunteer_activism</span> <b>완전 무료</b>: 누구나 사용할 수 있는 오픈 플랫폼</li>
+        </ul>
 
-        <div class="result-grid">
-          <article class="result-card">
-            <p class="result-label">Generated Code</p>
-            <p id="generated-code" class="result-code">-</p>
-            <p id="generated-sample-code" class="result-subtext">-</p>
-          </article>
-          <article class="result-card">
-            <p class="result-label">Sample Address</p>
-            <p id="generated-address" class="result-address">-</p>
-          </article>
-          <article class="result-card result-card-wide">
-            <p class="result-label">Sentence Preview</p>
-            <p id="generated-sentence" class="result-sentence">-</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="card card-lookup" aria-labelledby="lookup-heading">
-        <div class="card-header">
-          <p class="card-index">02</p>
-          <div>
-            <h2 id="lookup-heading">코드 해석기</h2>
-            <p>주입형 resolver가 샘플 단어 그룹으로만 해석되는지 확인한다.</p>
+        <details class="tech-specs">
+          <summary>기술 명세 (Technical Details)</summary>
+          <div class="specs-content">
+            <p>· <b>시스템 구조</b>: WGS84 위도/경도 기반 2단계 이중 격자 (Dual-Grid System)</p>
+            <p>· <b>서비스 범위</b>: 대한민국 전역 및 모든 도서 지역</p>
+            <p>· <b>격자 구역</b>: 1차(약 5km) / 2차(약 10m)</p>
+            <p>· <b>좌표 정밀도</b>: 0.0001도 (약 10m×10m 해상도)</p>
+            <p class="sub-text">* 법정 주소가 없는 산간, 해상, 공터 등 모든 핀포인트 위치를 특정합니다.</p>
           </div>
+        </details>
+
+        <div class="modal-footer">
+          <p class="modal-footer-text">Gilmaru v1.7.7</p>
+          <p class="modal-footer-text modal-footer-contact">Contact: <a href="mailto:jype@kakao.com"
+              class="modal-footer-link">jype@kakao.com</a></p>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <form id="lookup-form" class="lookup-form">
-          <label class="field field-wide">
-            <span>Gilmaru Code</span>
-            <input
-              id="code-input"
-              name="code"
-              type="text"
-              spellcheck="false"
-              value="A001.B001.C001.D001"
-            />
-          </label>
-          <button class="action-button action-button-outline" type="submit">코드 해석</button>
-        </form>
+  <!-- QR Code Modal -->
+  <div id="qr-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title"
+    aria-hidden="true" tabindex="-1">
+    <div class="modal-container qr-modal-container">
+      <h3 id="qr-modal-title" class="sr-only">길마루 QR 코드</h3>
 
-        <div class="lookup-output">
-          <article>
-            <p class="result-label">Resolved Words</p>
-            <p id="resolved-words" class="chip-row">-</p>
-          </article>
-          <article>
-            <p class="result-label">Full Address</p>
-            <p id="resolved-address" class="result-address">-</p>
-          </article>
-        </div>
-      </section>
+      <!-- The Card to Capture -->
+      <div id="qr-card-container" class="qr-card">
+        <div class="logo">길마루</div>
+        <div class="qr-box" id="qr-code-display"></div>
+        <h2 class="gilmaru-address" id="qr-gilmaru-text"></h2>
+        <p class="road-address" id="qr-road-address-text"></p>
+        <div class="footer-note">외우기 쉬운 한글 주소</div>
+      </div>
 
-      <section class="card card-pack" aria-labelledby="pack-heading">
-        <div class="card-header">
-          <p class="card-index">03</p>
-          <div>
-            <h2 id="pack-heading">현재 포함된 샘플 데이터</h2>
-            <p>이 데모는 아래 대표 샘플 4개만 사용한다.</p>
-          </div>
-        </div>
-        <div id="pack-groups" class="pack-groups"></div>
-      </section>
+      <!-- Actions -->
+      <div class="qr-actions">
+        <button id="btn-save-image" class="btn btn-primary qr-save-btn">
+          <span class="material-icons qr-save-icon">download</span> <span class="qr-save-label">이미지<br>저장</span>
+        </button>
+        <button id="btn-close-qr" class="btn btn-secondary qr-close-btn" aria-label="QR 모달 닫기">
+          닫기
+        </button>
+      </div>
 
-      <section class="card card-path" aria-labelledby="path-heading">
-        <div class="card-header">
-          <p class="card-index">04</p>
-          <div>
-            <h2 id="path-heading">다음 단계</h2>
-            <p>이 묶음은 공개 저장소의 시작점일 뿐이다.</p>
-          </div>
-        </div>
-        <ol class="path-list">
-          <li>안전한 공개 데이터 팩 정의</li>
-          <li>지도 공급자 비종속 샘플 UI 추가 확장</li>
-          <li>정식 LICENSE / NOTICE / TRADEMARK 정책 확정</li>
-        </ol>
-      </section>
-    </main>
+    </div>
+  </div>
 
-    <script type="module" src="./src/demo.js"></script>
-  </body>
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script type="module" src="app.js?v=1.7.7"></script>
+</body>
+
 </html>

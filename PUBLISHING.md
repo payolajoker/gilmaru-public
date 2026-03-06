@@ -1,42 +1,40 @@
 # Publishing Guide
 
-This bundle is meant to be copied into a separate repository when you are ready.
+This export is meant to become a separate public repository.
 
-## 1. Refresh the bundle from the main repository
-
-From the main Gilmaru repository:
+## 1. Refresh the export from the main workspace
 
 ```bash
 npm run prepare:public-release
 ```
 
-## 2. Create a new repository from this directory
+## 2. Create a repository from `public-release/`
 
 ```bash
 cd public-release
 git init
 git add .
-git commit -m "Initial public-release staging bundle"
-```
-
-Then connect a remote and push:
-
-```bash
-git remote add origin <YOUR_REMOTE_URL>
-git branch -M main
-git push -u origin main
+git commit -m "Initial public repository export"
 ```
 
 ## 3. Validate before pushing
 
 ```bash
 npm install
-npm run test
+npm run test -- --run
 npm run build
 ```
 
-## 4. Do not publish yet if these are still unresolved
+Optional:
 
-- Final LICENSE / NOTICE files are missing
-- Any blocked data asset has been copied in by mistake
-- README and OPEN_STATUS are out of date
+```bash
+npm run test:e2e
+```
+
+## 4. Connect a remote
+
+```bash
+git remote add origin <YOUR_REMOTE_URL>
+git branch -M main
+git push -u origin main
+```

@@ -1,0 +1,29 @@
+Gilmaru Notice
+
+Repository scope:
+
+- Application code and supporting scripts
+- Word datasets and generated Gilmaru word groups
+- Documentation and public-interest project materials
+
+External dependencies and services still carry their own terms or licenses.
+Important examples in the current app stack include:
+
+- Kakao Maps JavaScript SDK / Places
+- Pretendard
+- Material Icons
+- QRCode.js
+- html2canvas
+
+Current public-release assumption:
+
+- The project maintainer has confirmed that the current word-data assets,
+  including TOPIK-derived, MeCab-derived, and generated word files in this
+  repository, are lawful to publish and reuse.
+
+This repository notice should be read together with:
+
+- `TRADEMARKS.md`
+- `docs/licenses/code.md`
+- `docs/licenses/data.md`
+- `docs/licenses/docs.md`
