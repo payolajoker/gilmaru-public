@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gilmaru Public Release</title>
+    <meta
+      name="description"
+      content="길마루 공개용 코어 엔진과 샘플 단어 팩을 확인하는 데모 페이지"
+    />
+    <link rel="stylesheet" href="./src/demo.css" />
+  </head>
+  <body>
+    <div class="atlas-noise" aria-hidden="true"></div>
+    <header class="hero">
+      <p class="hero-kicker">Public Release Staging Bundle</p>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <h1>길마루를 공익 오픈 인프라로 분리하는 첫 번째 묶음</h1>
+          <p class="hero-body">
+            이 데모는 외부 단어 DB와 지도 SDK를 제거한 뒤에도 남는 순수 엔진이
+            어떻게 동작하는지 보여준다. 지금 보이는 주소와 문장은 모두 손으로
+            만든 샘플 단어 팩에서만 나온다.
+          </p>
+          <div class="hero-tags" aria-label="핵심 속성">
+            <span>지도 SDK 없음</span>
+            <span>샘플 데이터만 사용</span>
+            <span>별도 저장소 후보</span>
+          </div>
+        </div>
+        <aside class="hero-panel">
+          <p class="hero-panel-label">Release Boundary</p>
+          <ul>
+            <li>포함: 엔진, 샘플 데이터, 테스트, 정책 문서</li>
+            <li>제외: Kakao 쉘, TOPIK, MeCab, 파생 단어 데이터</li>
+          </ul>
+          <a class="hero-link" href="./EXCLUDED_ASSETS.md">제외 자산 보기</a>
+        </aside>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card card-input" aria-labelledby="coords-heading">
+        <div class="card-header">
+          <p class="card-index">01</p>
+          <div>
+            <h2 id="coords-heading">좌표에서 샘플 길마루 주소 만들기</h2>
+            <p>샘플 데이터 팩 기준으로 코드를 만들고 주소와 문장을 확인한다.</p>
+          </div>
+        </div>
+
+        <form id="coords-form" class="field-grid">
+          <label class="field">
+            <span>위도</span>
+            <input id="lat-input" name="lat" type="number" step="0.0001" value="37.5665" />
+          </label>
+          <label class="field">
+            <span>경도</span>
+            <input id="lng-input" name="lng" type="number" step="0.0001" value="126.9780" />
+          </label>
+          <button class="action-button" type="submit">샘플 주소 생성</button>
+        </form>
+
+        <div class="result-grid">
+          <article class="result-card">
+            <p class="result-label">Generated Code</p>
+            <p id="generated-code" class="result-code">-</p>
+            <p id="generated-sample-code" class="result-subtext">-</p>
+          </article>
+          <article class="result-card">
+            <p class="result-label">Sample Address</p>
+            <p id="generated-address" class="result-address">-</p>
+          </article>
+          <article class="result-card result-card-wide">
+            <p class="result-label">Sentence Preview</p>
+            <p id="generated-sentence" class="result-sentence">-</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card card-lookup" aria-labelledby="lookup-heading">
+        <div class="card-header">
+          <p class="card-index">02</p>
+          <div>
+            <h2 id="lookup-heading">코드 해석기</h2>
+            <p>주입형 resolver가 샘플 단어 그룹으로만 해석되는지 확인한다.</p>
+          </div>
+        </div>
+
+        <form id="lookup-form" class="lookup-form">
+          <label class="field field-wide">
+            <span>Gilmaru Code</span>
+            <input
+              id="code-input"
+              name="code"
+              type="text"
+              spellcheck="false"
+              value="A001.B002.C003.D004"
+            />
+          </label>
+          <button class="action-button action-button-outline" type="submit">코드 해석</button>
+        </form>
+
+        <div class="lookup-output">
+          <article>
+            <p class="result-label">Resolved Words</p>
+            <p id="resolved-words" class="chip-row">-</p>
+          </article>
+          <article>
+            <p class="result-label">Full Address</p>
+            <p id="resolved-address" class="result-address">-</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card card-pack" aria-labelledby="pack-heading">
+        <div class="card-header">
+          <p class="card-index">03</p>
+          <div>
+            <h2 id="pack-heading">현재 포함된 샘플 데이터</h2>
+            <p>이 데모는 아래 16개 샘플 단어만 사용한다.</p>
+          </div>
+        </div>
+        <div id="pack-groups" class="pack-groups"></div>
+      </section>
+
+      <section class="card card-path" aria-labelledby="path-heading">
+        <div class="card-header">
+          <p class="card-index">04</p>
+          <div>
+            <h2 id="path-heading">다음 단계</h2>
+            <p>이 묶음은 공개 저장소의 시작점일 뿐이다.</p>
+          </div>
+        </div>
+        <ol class="path-list">
+          <li>안전한 공개 데이터 팩 정의</li>
+          <li>지도 공급자 비종속 샘플 UI 추가 확장</li>
+          <li>정식 LICENSE / NOTICE / TRADEMARK 정책 확정</li>
+        </ol>
+      </section>
+    </main>
+
+    <script type="module" src="./src/demo.js"></script>
+  </body>
+</html>

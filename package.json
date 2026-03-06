@@ -1,0 +1,17 @@
+{
+  "name": "gilmaru-public-release",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Safe public-release staging bundle for Gilmaru core engine assets",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest --run --config vitest.config.js"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^1.6.1"
+  }
+}
