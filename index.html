@@ -86,7 +86,7 @@
   </div>
 
   <!-- App Version -->
-  <div id="app-version">Gilmaru v1.7.7</div>
+  <div id="app-version">Gilmaru v1.7.8</div>
 
   <!-- Bottom Sheet (Address Display) -->
   <div class="bottom-sheet">
@@ -100,8 +100,25 @@
       <div class="address-hint" id="address-hint">주소를 누르면 복사됩니다.</div>
       <div class="sentence-address" id="sentence-text"></div>
       <div class="road-address" id="road-address"></div>
+      <div class="status-stack">
+        <div class="status-banner" id="provider-status" role="status" aria-live="polite" aria-atomic="true">
+          <span id="provider-status-text">지도 공급자를 준비 중입니다.</span>
+        </div>
+        <div class="status-banner status-banner-warning" id="connectivity-banner" role="status" aria-live="polite"
+          aria-atomic="true" hidden></div>
+      </div>
+      <div class="provider-toolbar" role="group" aria-label="지도 공급자 선택">
+        <button type="button" class="utility-chip utility-chip-ghost" id="btn-provider-auto"
+          data-provider-preference="auto" aria-pressed="false">지도 자동</button>
+        <button type="button" class="utility-chip utility-chip-ghost" id="btn-provider-kakao"
+          data-provider-preference="kakao" aria-pressed="false">Kakao</button>
+        <button type="button" class="utility-chip utility-chip-ghost" id="btn-provider-open"
+          data-provider-preference="open" aria-pressed="false">Open</button>
+      </div>
       <div class="guidance-toolbar" role="group" aria-label="길마루 도구">
         <button type="button" class="utility-chip" id="btn-toggle-guidance" aria-pressed="false">쉬운 안내</button>
+        <button type="button" class="utility-chip" id="btn-toggle-contrast" aria-pressed="false">고대비</button>
+        <button type="button" class="utility-chip" id="btn-toggle-large-text" aria-pressed="false">큰 글씨</button>
         <button type="button" class="utility-chip" id="btn-load-sample-pack">샘플 팩</button>
         <button type="button" class="utility-chip" id="btn-import-pack">파일 열기</button>
         <button type="button" class="utility-chip utility-chip-ghost" id="btn-clear-point-pack" hidden>팩 닫기</button>
@@ -187,7 +204,7 @@
         </details>
 
         <div class="modal-footer">
-          <p class="modal-footer-text">Gilmaru v1.7.7</p>
+          <p class="modal-footer-text">Gilmaru v1.7.8</p>
           <p class="modal-footer-text modal-footer-contact">Contact: <a href="mailto:jype@kakao.com"
               class="modal-footer-link">jype@kakao.com</a></p>
         </div>
@@ -226,7 +243,7 @@
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script type="module" src="app.js?v=1.7.7"></script>
+  <script type="module" src="app.js?v=1.7.8"></script>
 </body>
 
 </html>

@@ -70,3 +70,15 @@ test('searches a place in OpenStreetMap mode on submit', async ({ page }) => {
   await expect(page.locator('#road-address')).toContainText('Open Road 1');
   await expect(page.locator('#address-text')).not.toContainText('로딩중');
 });
+
+test('uses a stored open provider preference without a query parameter', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('gilmaru.mapProviderPreference', 'open');
+  });
+
+  await page.goto('/');
+
+  await expect(page.locator('body')).toHaveAttribute('data-map-provider', 'openstreetmap');
+  await expect(page.locator('#provider-status-text')).toContainText('OpenStreetMap');
+  await expect(page.locator('#btn-provider-open')).toHaveAttribute('aria-pressed', 'true');
+});

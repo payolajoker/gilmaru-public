@@ -1,10 +1,23 @@
-const CACHE_VERSION = 'gilmaru-runtime-v1.7.7-20260306';
+const CACHE_VERSION = 'gilmaru-runtime-v1.7.8-20260307';
 const OFFLINE_FALLBACKS = ['./', './index.html'];
+const CORE_CACHE_URLS = [
+    './manifest.json',
+    './style.css',
+    './app.js',
+    './gilmaru_core.js',
+    './gilmaru_engine.js',
+    './map-provider.js',
+    './point-pack-validator.js',
+    './word_data.js',
+    './data/point-packs/examples/gangnam-station-access-pack.json',
+    './data/point-packs/examples/seoul-cityhall-access-pack.json',
+    './icons/icon.svg'
+];
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_VERSION).then((cache) => cache.addAll(OFFLINE_FALLBACKS))
+        caches.open(CACHE_VERSION).then((cache) => cacheUrlsBestEffort(cache, [...OFFLINE_FALLBACKS, ...CORE_CACHE_URLS]))
     );
 });
 
@@ -66,4 +79,20 @@ async function staleWhileRevalidate(request) {
 
 function isCacheable(response) {
     return Boolean(response && response.ok && (response.type === 'basic' || response.type === 'cors'));
+}
+
+async function cacheUrlsBestEffort(cache, urls) {
+    await Promise.all(
+        urls.map(async (url) => {
+            try {
+                const request = new Request(url, { cache: 'reload' });
+                const response = await fetch(request);
+                if (isCacheable(response)) {
+                    await cache.put(request, response.clone());
+                }
+            } catch (error) {
+                // Ignore missing hashed assets and cross-origin failures during install.
+            }
+        })
+    );
 }

@@ -197,3 +197,49 @@ test('toggles easy guidance mode and loads the sample point pack', async ({ page
   await expect(page.locator('#point-pack-panel')).toBeVisible();
   await expect(page.locator('#point-pack-source')).toContainText('샘플 팩');
 });
+
+test('persists contrast and large text preferences across reloads', async ({ page }) => {
+  await page.goto('/');
+
+  await page.click('#btn-toggle-contrast');
+  await page.click('#btn-toggle-large-text');
+
+  await expect(page.locator('body')).toHaveAttribute('data-contrast-mode', 'high');
+  await expect(page.locator('body')).toHaveAttribute('data-text-scale', 'large');
+
+  await page.reload();
+
+  await expect(page.locator('body')).toHaveAttribute('data-contrast-mode', 'high');
+  await expect(page.locator('body')).toHaveAttribute('data-text-scale', 'large');
+  await expect(page.locator('#btn-toggle-contrast')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#btn-toggle-large-text')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('shows the offline banner after connectivity changes and keeps a cached snapshot', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.locator('#address-text')).not.toContainText(LOADING_TEXT);
+  const displayedAddress = await getDisplayedAddress(page);
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = window.localStorage.getItem('gilmaru.lastSnapshot');
+        return raw ? JSON.parse(raw).addressText : '';
+      })
+    )
+    .toContain(displayedAddress);
+
+  await page.evaluate(() => {
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      get: () => false,
+    });
+    window.dispatchEvent(new Event('offline'));
+  });
+
+  await expect(page.locator('body')).toHaveAttribute('data-connectivity', 'offline');
+  await expect(page.locator('#connectivity-banner')).toBeVisible();
+  await expect(page.locator('#connectivity-banner')).toContainText('오프라인 상태');
+  await expect(page.locator('#address-text')).toContainText(displayedAddress);
+});

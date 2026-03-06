@@ -16,6 +16,9 @@ let activePointPack = null;
 let activePointPackSource = '';
 let selectedPointId = null;
 let easyGuidanceMode = false;
+let highContrastMode = false;
+let largeTextMode = false;
+let restoredSnapshot = null;
 
 const FOCUSABLE_SELECTOR = [
     'button:not([disabled])',
@@ -39,6 +42,13 @@ const SAMPLE_POINT_PACK_URL = new URL(
     './data/point-packs/examples/gangnam-station-access-pack.json',
     import.meta.url
 ).toString();
+const STORAGE_KEYS = {
+    mapProviderPreference: 'gilmaru.mapProviderPreference',
+    contrastMode: 'gilmaru.contrastMode',
+    textScale: 'gilmaru.textScale',
+    lastSnapshot: 'gilmaru.lastSnapshot'
+};
+const PROVIDER_PREFERENCES = new Set(['auto', 'kakao', 'open']);
 const GILMARU_GROUPS = ['A', 'B', 'C', 'D'];
 const GILMARU_WORD_GROUPS = {
     A: wordA,
@@ -74,8 +84,15 @@ const POINT_STATUS_LABELS = {
 /* Initialization */
 document.addEventListener('DOMContentLoaded', async () => {
     initCanvas();
+    restoreCachedSnapshot();
+    restoreAppearancePreferences();
+    applyAppearancePreferences();
+    syncProviderPreferenceUI();
+    updateConnectivityStatus(false);
+    bindConnectivityListeners();
 
     const mapResult = await createMapController({
+        search: buildProviderAwareSearch(),
         env: ENV,
         windowConfig: WINDOW_CONFIG,
         appBaseUrl: APP_BASE_URL,
@@ -107,12 +124,270 @@ document.addEventListener('DOMContentLoaded', async () => {
 function updateProviderStatus() {
     document.body.dataset.mapProvider = mapProviderInfo?.id || 'unknown';
     const versionEl = document.getElementById('app-version');
+    const providerStatusEl = document.getElementById('provider-status-text');
+    const providerPreference = getEffectiveProviderPreference();
+    syncProviderPreferenceUI();
+
+    if (providerStatusEl) {
+        if (!mapProviderInfo) {
+            providerStatusEl.textContent = '지도 공급자를 준비 중입니다.';
+        } else {
+            const modeLabel = providerPreference === 'auto' ? '자동 선택' : '직접 선택';
+            providerStatusEl.textContent = `현재 지도: ${mapProviderInfo.label} · ${modeLabel}`;
+        }
+    }
+
     if (!versionEl || !mapProviderInfo) return;
 
     const suffix = mapProviderInfo.id === 'openstreetmap'
         ? ' · OpenStreetMap public mode'
         : '';
-    versionEl.textContent = `Gilmaru v1.7.7${suffix}`;
+    versionEl.textContent = `Gilmaru v1.7.8${suffix}`;
+}
+
+function safeStorageGet(key) {
+    try {
+        return window.localStorage.getItem(key);
+    } catch (error) {
+        console.warn('localStorage read failed:', error);
+        return null;
+    }
+}
+
+function safeStorageSet(key, value) {
+    try {
+        window.localStorage.setItem(key, value);
+    } catch (error) {
+        console.warn('localStorage write failed:', error);
+    }
+}
+
+function safeStorageRemove(key) {
+    try {
+        window.localStorage.removeItem(key);
+    } catch (error) {
+        console.warn('localStorage remove failed:', error);
+    }
+}
+
+function normalizeProviderPreference(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return PROVIDER_PREFERENCES.has(normalized) ? normalized : 'auto';
+}
+
+function getExplicitProviderPreference() {
+    const params = new URLSearchParams(window.location.search);
+    const explicit = params.get('provider') || params.get('map') || '';
+    return explicit ? normalizeProviderPreference(explicit) : '';
+}
+
+function getStoredProviderPreference() {
+    return normalizeProviderPreference(
+        safeStorageGet(STORAGE_KEYS.mapProviderPreference) ||
+        WINDOW_CONFIG.mapProviderPreference ||
+        ENV.VITE_MAP_PROVIDER ||
+        'auto'
+    );
+}
+
+function getEffectiveProviderPreference() {
+    return getExplicitProviderPreference() || getStoredProviderPreference() || 'auto';
+}
+
+function buildProviderAwareSearch() {
+    const currentUrl = new URL(window.location.href);
+    const explicitPreference = getExplicitProviderPreference();
+    if (explicitPreference) {
+        return currentUrl.search;
+    }
+
+    const storedPreference = getStoredProviderPreference();
+    if (storedPreference === 'auto') {
+        currentUrl.searchParams.delete('provider');
+        currentUrl.searchParams.delete('map');
+        return currentUrl.search;
+    }
+
+    currentUrl.searchParams.set('provider', storedPreference);
+    return currentUrl.search;
+}
+
+function syncProviderPreferenceUI() {
+    const activePreference = getEffectiveProviderPreference();
+    document.body.dataset.mapProviderPreference = activePreference;
+
+    document.querySelectorAll('[data-provider-preference]').forEach((button) => {
+        const isActive = button.dataset.providerPreference === activePreference;
+        button.setAttribute('aria-pressed', String(isActive));
+    });
+}
+
+function setProviderPreference(preference) {
+    const normalized = normalizeProviderPreference(preference);
+    const currentEffectivePreference = getEffectiveProviderPreference();
+    const currentStoredPreference = getStoredProviderPreference();
+
+    if (normalized === currentEffectivePreference && normalized === currentStoredPreference) {
+        syncProviderPreferenceUI();
+        return;
+    }
+
+    if (normalized === 'auto') {
+        safeStorageRemove(STORAGE_KEYS.mapProviderPreference);
+    } else {
+        safeStorageSet(STORAGE_KEYS.mapProviderPreference, normalized);
+    }
+
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete('map');
+    if (normalized === 'auto') {
+        nextUrl.searchParams.delete('provider');
+    } else {
+        nextUrl.searchParams.set('provider', normalized);
+    }
+    window.location.assign(nextUrl.toString());
+}
+
+function restoreAppearancePreferences() {
+    highContrastMode = safeStorageGet(STORAGE_KEYS.contrastMode) === 'high';
+    largeTextMode = safeStorageGet(STORAGE_KEYS.textScale) === 'large';
+}
+
+function applyAppearancePreferences() {
+    document.body.dataset.contrastMode = highContrastMode ? 'high' : 'default';
+    document.body.dataset.textScale = largeTextMode ? 'large' : 'default';
+
+    const contrastButton = document.getElementById('btn-toggle-contrast');
+    const largeTextButton = document.getElementById('btn-toggle-large-text');
+
+    if (contrastButton) {
+        contrastButton.setAttribute('aria-pressed', String(highContrastMode));
+        contrastButton.textContent = highContrastMode ? '고대비 켜짐' : '고대비';
+    }
+
+    if (largeTextButton) {
+        largeTextButton.setAttribute('aria-pressed', String(largeTextMode));
+        largeTextButton.textContent = largeTextMode ? '큰 글씨 켜짐' : '큰 글씨';
+    }
+}
+
+function toggleHighContrastMode() {
+    highContrastMode = !highContrastMode;
+    safeStorageSet(STORAGE_KEYS.contrastMode, highContrastMode ? 'high' : 'default');
+    applyAppearancePreferences();
+    showToast(highContrastMode ? '고대비 모드를 켰습니다.' : '고대비 모드를 껐습니다.');
+}
+
+function toggleLargeTextMode() {
+    largeTextMode = !largeTextMode;
+    safeStorageSet(STORAGE_KEYS.textScale, largeTextMode ? 'large' : 'default');
+    applyAppearancePreferences();
+    showToast(largeTextMode ? '큰 글씨 모드를 켰습니다.' : '큰 글씨 모드를 껐습니다.');
+}
+
+function bindConnectivityListeners() {
+    window.addEventListener('online', () => updateConnectivityStatus(true));
+    window.addEventListener('offline', () => updateConnectivityStatus(true));
+}
+
+function updateConnectivityStatus(announce = false) {
+    const isOnline = navigator.onLine !== false;
+    const banner = document.getElementById('connectivity-banner');
+
+    document.body.dataset.connectivity = isOnline ? 'online' : 'offline';
+    if (!banner) return;
+
+    if (isOnline) {
+        banner.hidden = true;
+        banner.textContent = '';
+        if (announce) {
+            showToast('온라인 상태로 돌아왔습니다.');
+        }
+        return;
+    }
+
+    const hasSnapshot = Boolean(restoredSnapshot?.addressText);
+    banner.textContent = hasSnapshot
+        ? '오프라인 상태입니다. 마지막으로 본 주소와 캐시된 화면만 사용할 수 있습니다.'
+        : '오프라인 상태입니다. 캐시된 화면만 볼 수 있고 새 검색은 제한될 수 있습니다.';
+    banner.hidden = false;
+
+    if (announce) {
+        showToast('오프라인 상태입니다.');
+    }
+}
+
+function getCurrentAddressText() {
+    const addressNode = document.getElementById('address-text')?.firstChild;
+    return addressNode?.textContent?.trim() || '';
+}
+
+function renderAddressText(addressText) {
+    const addressEl = document.getElementById('address-text');
+    if (!addressEl) return;
+    addressEl.innerHTML = `${escapeHtml(addressText)} <span class="material-icons copy-icon" aria-hidden="true">content_copy</span>`;
+}
+
+function renderSentenceText(sentence) {
+    const sentenceEl = document.getElementById('sentence-text');
+    if (sentenceEl) {
+        sentenceEl.textContent = sentence ? `"${sentence}"` : '';
+    }
+}
+
+function renderRoadAndPlace(roadAddress = '', placeName = '') {
+    const roadEl = document.getElementById('road-address');
+    const placeEl = document.getElementById('place-name');
+
+    if (roadEl) {
+        roadEl.textContent = roadAddress;
+    }
+
+    if (!placeEl) return;
+
+    if (placeName) {
+        placeEl.textContent = placeName;
+        placeEl.style.display = 'block';
+    } else {
+        placeEl.textContent = '';
+        placeEl.style.display = 'none';
+    }
+}
+
+function persistSnapshot(code = '') {
+    const addressText = getCurrentAddressText();
+    if (!addressText) return;
+
+    const snapshot = {
+        code,
+        addressText,
+        sentence: document.getElementById('sentence-text')?.textContent?.trim() || '',
+        roadAddress: currentRoadAddress || document.getElementById('road-address')?.textContent?.trim() || '',
+        placeName: currentPlaceName || document.getElementById('place-name')?.textContent?.trim() || '',
+        timestamp: new Date().toISOString()
+    };
+
+    restoredSnapshot = snapshot;
+    safeStorageSet(STORAGE_KEYS.lastSnapshot, JSON.stringify(snapshot));
+}
+
+function restoreCachedSnapshot() {
+    const raw = safeStorageGet(STORAGE_KEYS.lastSnapshot);
+    if (!raw) return;
+
+    try {
+        const snapshot = JSON.parse(raw);
+        if (!snapshot || typeof snapshot.addressText !== 'string' || !snapshot.addressText.trim()) {
+            return;
+        }
+
+        restoredSnapshot = snapshot;
+        renderAddressText(snapshot.addressText.trim());
+        renderSentenceText(snapshot.sentence || '');
+        renderRoadAndPlace(snapshot.roadAddress || '', snapshot.placeName || '');
+    } catch (error) {
+        console.warn('Cached snapshot restore failed:', error);
+    }
 }
 
 function handleMapLoadFailure(reason = 'sdk-load-failed') {
@@ -120,6 +395,15 @@ function handleMapLoadFailure(reason = 'sdk-load-failed') {
     const sentenceEl = document.getElementById('sentence-text');
     const roadEl = document.getElementById('road-address');
     const isLocalOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const hasRestoredSnapshot = Boolean(restoredSnapshot?.addressText);
+
+    if (hasRestoredSnapshot && navigator.onLine === false) {
+        renderAddressText(restoredSnapshot.addressText);
+        renderSentenceText(restoredSnapshot.sentence || '');
+        renderRoadAndPlace(restoredSnapshot.roadAddress || '', restoredSnapshot.placeName || '');
+        showToast('오프라인이라 마지막으로 본 주소를 보여줍니다.');
+        return;
+    }
 
     if (reason === 'missing-kakao-key') {
         if (addressEl) addressEl.textContent = '카카오 키 필요';
@@ -290,6 +574,13 @@ function initEventListeners() {
     });
 
     document.getElementById('btn-toggle-guidance').addEventListener('click', toggleEasyGuidanceMode);
+    document.getElementById('btn-toggle-contrast').addEventListener('click', toggleHighContrastMode);
+    document.getElementById('btn-toggle-large-text').addEventListener('click', toggleLargeTextMode);
+    document.querySelectorAll('[data-provider-preference]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setProviderPreference(button.dataset.providerPreference);
+        });
+    });
     document.getElementById('btn-load-sample-pack').addEventListener('click', () => {
         loadPointPackFromUrl(SAMPLE_POINT_PACK_URL, '샘플 팩');
     });
@@ -351,6 +642,15 @@ function applyGuidanceMode() {
     searchInput.placeholder = easyGuidanceMode
         ? '장소 이름이나 4단어 주소를 찾으세요'
         : '장소 또는 길마루 주소 검색 (예: 강남역)';
+
+    if (searchInput) {
+        const basePlaceholder = easyGuidanceMode
+            ? '장소 이름이나 4단어 주소를 찾으세요'
+            : '장소 또는 길마루 주소 검색 (예: 강남역)';
+        searchInput.placeholder = mapProviderInfo?.supportsAutocomplete === false
+            ? `${basePlaceholder} · Enter로 검색`
+            : basePlaceholder;
+    }
 
     renderGuidancePanel();
 }
@@ -815,10 +1115,7 @@ function updateCenterAddress() {
 
         // 1. Gilmaru Address
         const addressText = fullAddress(gilmaru.code);
-        const addressEl = document.getElementById('address-text');
-        if (addressEl) {
-            addressEl.innerHTML = `${addressText} <span class="material-icons copy-icon">content_copy</span>`;
-        }
+        renderAddressText(addressText);
 
         // 1.5 Sentence Address (Mnemonic)
         const words = getWordsFromCode(gilmaru.code);
@@ -828,10 +1125,7 @@ function updateCenterAddress() {
         }
 
         const sentence = generateSentence(words, gilmaru.x + gilmaru.y);
-        const sentenceEl = document.getElementById('sentence-text');
-        if (sentenceEl) {
-            sentenceEl.innerHTML = `"${sentence}"`;
-        }
+        renderSentenceText(sentence);
 
         // 2. Real Address & Place Name (Reverse Geocoding)
         updateDetailAddress(center.lat, center.lng);
@@ -845,6 +1139,7 @@ function updateCenterAddress() {
         // Update the URL without reloading page so users can copy/share immediately
         const newUrl = `${window.location.pathname}?code=${gilmaru.code}`;
         window.history.replaceState({ path: newUrl }, '', newUrl);
+        persistSnapshot(gilmaru.code);
 
     } catch (e) {
         console.error("Critical Error in updateCenterAddress:", e);
@@ -852,19 +1147,12 @@ function updateCenterAddress() {
 }
 
 function updateDetailAddress(lat, lng) {
-    const placeEl = document.getElementById('place-name');
-    const roadEl = document.getElementById('road-address');
     const requestToken = ++detailRequestToken;
 
     // If we have a searched road address, use it directly (Priority 1)
     if (currentRoadAddress) {
-        roadEl.textContent = currentRoadAddress;
-        if (currentPlaceName) {
-            placeEl.textContent = currentPlaceName;
-            placeEl.style.display = "block";
-        } else {
-            placeEl.style.display = "none";
-        }
+        renderRoadAndPlace(currentRoadAddress, currentPlaceName || '');
+        persistSnapshot();
         return; // Skip reverse geocoding to avoid overwriting with less accurate data
     }
 
@@ -872,25 +1160,17 @@ function updateDetailAddress(lat, lng) {
         if (requestToken !== detailRequestToken || currentRoadAddress) return;
 
         if (!detail) {
-            roadEl.textContent = "";
-            placeEl.style.display = "none";
+            renderRoadAndPlace('', '');
             return;
         }
 
         const displayAddr = detail.roadAddress || detail.jibunAddress || "";
-        roadEl.textContent = displayAddr;
-
         const displayPlace = currentPlaceName || detail.buildingName;
-        if (displayPlace) {
-            placeEl.textContent = displayPlace;
-            placeEl.style.display = "block";
-        } else {
-            placeEl.style.display = "none";
-        }
+        renderRoadAndPlace(displayAddr, displayPlace || '');
+        persistSnapshot();
     }).catch(() => {
         if (requestToken !== detailRequestToken || currentRoadAddress) return;
-        roadEl.textContent = "";
-        placeEl.style.display = "none";
+        renderRoadAndPlace('', '');
     });
 }
 
@@ -1151,6 +1431,11 @@ document.getElementById('search-results').addEventListener('click', (e) => {
 });
 
 async function searchPlaces(keyword) {
+    if (navigator.onLine === false && mapProviderInfo?.id === 'openstreetmap') {
+        showToast('오프라인에서는 새 장소 검색이 제한됩니다.');
+        return;
+    }
+
     try {
         const data = await map.searchPlaces(keyword, { limit: 1 });
         if (data.length === 0) {
@@ -1223,8 +1508,7 @@ function moveToMyLocation() {
 function getLinkToCurrentPosition() {
     // Generate link based on CURRENTLY DISPLAYED address text
     // This ensures What You See Is What You Copy
-    const addressNode = document.getElementById('address-text').firstChild;
-    const addressText = addressNode ? addressNode.textContent.trim() : "";
+    const addressText = getCurrentAddressText();
 
     // addressText is "Word Word Word Word" (space separated)
     // Convert to dot separated for unique URL param
@@ -1242,8 +1526,7 @@ function getLinkToCurrentPosition() {
 }
 function copyAddressToClipboard() {
     // Only copy the 4 words as requested
-    const addressNode = document.getElementById('address-text').firstChild;
-    const addressText = addressNode ? addressNode.textContent.trim() : "";
+    const addressText = getCurrentAddressText();
 
     if (!addressText || addressText === "로딩중...") {
         showToast("주소가 로딩되지 않았습니다.");
