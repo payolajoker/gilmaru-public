@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "1.0.0",
+  "packId": "gangnam-station-access-pack",
+  "name": "Gangnam Station Access Pack",
+  "summary": "Example public-interest pack around the Gangnam Station area for accessibility and meetup guidance.",
+  "language": "ko-KR",
+  "license": "ODbL-1.0",
+  "homepage": "https://payolajoker.github.io/gilmaru-public/",
+  "region": {
+    "country": "KR",
+    "province": "Seoul",
+    "city": "Seoul",
+    "district": "Gangnam-gu"
+  },
+  "maintainers": [
+    {
+      "name": "Gilmaru community",
+      "url": "https://github.com/payolajoker/gilmaru-public"
+    }
+  ],
+  "sources": [
+    {
+      "name": "Demo sample near default map center",
+      "type": "community-sample",
+      "checkedAt": "2026-03-07"
+    }
+  ],
+  "points": [
+    {
+      "id": "gangnam-plaza-meeting-point",
+      "type": "meeting_point",
+      "name": "Gangnam plaza meeting point",
+      "description": "Open meetup spot near the main station plaza.",
+      "gilmaruCode": "A004.B004.C004.D001",
+      "coordinates": {
+        "lat": 37.49802,
+        "lng": 127.02772
+      },
+      "status": "verified",
+      "verifiedAt": "2026-03-07",
+      "lastUpdated": "2026-03-07T10:00:00Z",
+      "tags": [
+        "meeting",
+        "station"
+      ]
+    },
+    {
+      "id": "gangnam-elevator-link",
+      "type": "elevator",
+      "name": "Station elevator access",
+      "description": "Elevator route for a step-free connection near the station corridor.",
+      "gilmaruCode": "A005.B004.C004.D001",
+      "coordinates": {
+        "lat": 37.49818,
+        "lng": 127.02805
+      },
+      "status": "verified",
+      "verifiedAt": "2026-03-07",
+      "lastUpdated": "2026-03-07T10:05:00Z",
+      "tags": [
+        "step-free",
+        "elevator"
+      ],
+      "accessibility": {
+        "stepFree": true,
+        "notes": "Use the elevator instead of the stairs on the east side."
+      }
+    },
+    {
+      "id": "gangnam-rest-area",
+      "type": "rest_area",
+      "name": "Quiet rest area",
+      "description": "Short break point away from the main foot traffic.",
+      "gilmaruCode": "A006.B004.C004.D001",
+      "coordinates": {
+        "lat": 37.49758,
+        "lng": 127.02731
+      },
+      "status": "reported",
+      "lastUpdated": "2026-03-07T10:10:00Z",
+      "tags": [
+        "rest",
+        "quiet"
+      ],
+      "accessibility": {
+        "stepFree": true,
+        "notes": "Community-reported calm waiting area."
+      }
+    },
+    {
+      "id": "gangnam-info-desk",
+      "type": "info_desk",
+      "name": "Station help desk",
+      "description": "Information point for visitor questions and local wayfinding.",
+      "gilmaruCode": "A007.B004.C004.D001",
+      "coordinates": {
+        "lat": 37.49784,
+        "lng": 127.02688
+      },
+      "status": "temporary",
+      "lastUpdated": "2026-03-07T10:20:00Z",
+      "tags": [
+        "help",
+        "info"
+      ]
+    }
+  ]
+}

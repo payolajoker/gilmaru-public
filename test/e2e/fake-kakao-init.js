@@ -99,6 +99,24 @@
     }
   }
 
+  class Marker {
+    constructor(options) {
+      this.options = options;
+      this.map = options.map ?? null;
+      this.position = options.position;
+      this.title = options.title ?? '';
+      this.zIndex = 1;
+    }
+
+    setMap(map) {
+      this.map = map;
+    }
+
+    setZIndex(value) {
+      this.zIndex = value;
+    }
+  }
+
   class Geocoder {
     coord2Address(lng, lat, callback) {
       const roundedLat = Number(lat).toFixed(4);
@@ -161,6 +179,7 @@
       Map: FakeMap,
       LatLng,
       LatLngBounds,
+      Marker,
       Rectangle,
       event: {
         addListener,

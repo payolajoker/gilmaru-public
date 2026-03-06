@@ -92,14 +92,33 @@
   <div class="bottom-sheet">
     <div class="address-card">
       <div class="place-name" id="place-name"></div>
-      <div class="address-label">현재 위치의 길마루 주소</div>
+      <div class="address-label" id="address-label">현재 위치의 길마루 주소</div>
       <button type="button" class="gilmaru-address gilmaru-address-btn" id="address-text" title="클릭하여 복사"
         aria-label="길마루 주소 복사">
         로딩중...
       </button>
-      <div class="address-hint">주소를 누르면 복사됩니다.</div>
+      <div class="address-hint" id="address-hint">주소를 누르면 복사됩니다.</div>
       <div class="sentence-address" id="sentence-text"></div>
       <div class="road-address" id="road-address"></div>
+      <div class="guidance-toolbar" role="group" aria-label="길마루 도구">
+        <button type="button" class="utility-chip" id="btn-toggle-guidance" aria-pressed="false">쉬운 안내</button>
+        <button type="button" class="utility-chip" id="btn-load-sample-pack">샘플 팩</button>
+        <button type="button" class="utility-chip" id="btn-import-pack">파일 열기</button>
+        <button type="button" class="utility-chip utility-chip-ghost" id="btn-clear-point-pack" hidden>팩 닫기</button>
+        <input type="file" id="point-pack-input" accept=".json,application/json" hidden>
+      </div>
+      <div class="guidance-panel" id="guidance-panel" hidden></div>
+      <section class="point-pack-panel" id="point-pack-panel" hidden aria-labelledby="point-pack-title">
+        <div class="point-pack-head">
+          <div>
+            <div class="point-pack-kicker" id="point-pack-source">커뮤니티 포인트 팩</div>
+            <h3 class="point-pack-title" id="point-pack-title">포인트 팩</h3>
+          </div>
+        </div>
+        <p class="point-pack-summary" id="point-pack-summary"></p>
+        <div class="point-pack-selected" id="point-pack-selected" hidden></div>
+        <div class="point-pack-list" id="point-pack-list" role="list"></div>
+      </section>
 
       <div class="action-buttons">
         <button class="btn btn-primary" id="btn-share" aria-label="주소 공유하기">

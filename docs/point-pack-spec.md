@@ -108,11 +108,13 @@ Future versions can add richer fields once enough real packs exist.
 
 See:
 
+- `data/point-packs/examples/gangnam-station-access-pack.json`
 - `data/point-packs/examples/seoul-cityhall-access-pack.json`
 
 ## Compatibility notes
 
-- The current web app does not yet render point packs directly.
-- The schema exists now so communities can start publishing reviewable data.
-- Future import/export and GeoJSON bridges should preserve these fields where
-  possible.
+- The current web app can load sample packs and local JSON packs, then render
+  them as selectable map points and list items.
+- The schema exists so communities can publish reviewable data before a richer
+  import/export pipeline lands.
+- Future GeoJSON bridges should preserve these fields where possible.

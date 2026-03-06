@@ -1,6 +1,7 @@
 import { wordA, wordB, wordC, wordD } from './word_data.js';
 import { latLngToGilmaru, getWordsFromCode, generateSentence, fullAddress } from './gilmaru_core.js';
 import { createMapController } from './map-provider.js';
+import { validatePointPack } from './point-pack-validator.js';
 
 let map;
 let canvas, ctx;
@@ -11,6 +12,10 @@ let lastFocusedElement = null;
 let searchActiveIndex = -1;
 let mapProviderInfo = null;
 let detailRequestToken = 0;
+let activePointPack = null;
+let activePointPackSource = '';
+let selectedPointId = null;
+let easyGuidanceMode = false;
 
 const FOCUSABLE_SELECTOR = [
     'button:not([disabled])',
@@ -30,6 +35,10 @@ const WINDOW_CONFIG = window.__GILMARU_CONFIG__ || {};
 const APP_BASE_URL = ENV.BASE_URL || new URL('./', window.location.href).pathname;
 const RUNTIME_CONFIG_PATHS = ['gilmaru.config.local.json', 'gilmaru.config.json'];
 const SERVICE_WORKER_URL = new URL('sw.js', new URL(APP_BASE_URL, window.location.origin));
+const SAMPLE_POINT_PACK_URL = new URL(
+    './data/point-packs/examples/gangnam-station-access-pack.json',
+    import.meta.url
+).toString();
 const GILMARU_GROUPS = ['A', 'B', 'C', 'D'];
 const GILMARU_WORD_GROUPS = {
     A: wordA,
@@ -43,6 +52,24 @@ const GILMARU_WORD_LOOKUPS = Object.fromEntries(
         new Map(words.map((word, index) => [word, index]))
     ])
 );
+const POINT_TYPE_LABELS = {
+    entrance: '입구',
+    accessible_parking: '장애인 주차',
+    ramp: '경사로',
+    elevator: '엘리베이터',
+    accessible_restroom: '무장애 화장실',
+    rest_area: '쉼터',
+    meeting_point: '집결지',
+    info_desk: '안내 데스크',
+    transit_stop: '정류장',
+    quiet_room: '조용한 공간'
+};
+const POINT_STATUS_LABELS = {
+    verified: '현장 확인',
+    reported: '제보됨',
+    temporary: '임시 운영',
+    inactive: '현재 미운영'
+};
 
 /* Initialization */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -71,6 +98,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initMap();
     initEventListeners();
+    applyGuidanceMode();
+    renderPointPackUI();
+    await loadPointPackFromUrl(SAMPLE_POINT_PACK_URL, '기본 샘플 팩');
     setTimeout(initDeepLink, 1000); // Small delay to ensure map is ready
 });
 
@@ -154,6 +184,7 @@ function initMap() {
     map.onDragStart(() => {
         currentPlaceName = null;
         currentRoadAddress = null;
+        clearSelectedPoint();
     });
     if (mapProviderInfo?.notice) {
         showToast(mapProviderInfo.notice);
@@ -258,6 +289,23 @@ function initEventListeners() {
         if (e.target === qrModal) closeModal(qrModal);
     });
 
+    document.getElementById('btn-toggle-guidance').addEventListener('click', toggleEasyGuidanceMode);
+    document.getElementById('btn-load-sample-pack').addEventListener('click', () => {
+        loadPointPackFromUrl(SAMPLE_POINT_PACK_URL, '샘플 팩');
+    });
+    document.getElementById('btn-import-pack').addEventListener('click', () => {
+        document.getElementById('point-pack-input').click();
+    });
+    document.getElementById('point-pack-input').addEventListener('change', handlePointPackFileSelection);
+    document.getElementById('btn-clear-point-pack').addEventListener('click', () => {
+        clearPointPack();
+    });
+    document.getElementById('point-pack-list').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-point-id]');
+        if (!button) return;
+        selectPointById(button.dataset.pointId);
+    });
+
     // Global modal keyboard interactions
     document.addEventListener('keydown', (e) => {
         if (e.key === '/' && !activeModal && !isTextInputTarget(e.target)) {
@@ -279,6 +327,317 @@ function initEventListeners() {
             trapFocus(e, activeModal);
         }
     });
+}
+
+function toggleEasyGuidanceMode() {
+    easyGuidanceMode = !easyGuidanceMode;
+    applyGuidanceMode();
+    renderPointPackUI();
+    showToast(easyGuidanceMode ? '쉬운 안내를 켰습니다.' : '쉬운 안내를 껐습니다.');
+}
+
+function applyGuidanceMode() {
+    document.body.dataset.guidanceMode = easyGuidanceMode ? 'easy' : 'default';
+
+    const toggleButton = document.getElementById('btn-toggle-guidance');
+    const addressLabel = document.getElementById('address-label');
+    const addressHint = document.getElementById('address-hint');
+    const searchInput = document.getElementById('search-input');
+
+    toggleButton.setAttribute('aria-pressed', String(easyGuidanceMode));
+    toggleButton.textContent = easyGuidanceMode ? '쉬운 안내 켜짐' : '쉬운 안내';
+    addressLabel.textContent = easyGuidanceMode ? '지금 보는 4단어 주소' : '현재 위치의 길마루 주소';
+    addressHint.textContent = easyGuidanceMode ? '주소를 눌러 복사하세요.' : '주소를 누르면 복사됩니다.';
+    searchInput.placeholder = easyGuidanceMode
+        ? '장소 이름이나 4단어 주소를 찾으세요'
+        : '장소 또는 길마루 주소 검색 (예: 강남역)';
+
+    renderGuidancePanel();
+}
+
+function renderGuidancePanel() {
+    const panel = document.getElementById('guidance-panel');
+    if (!easyGuidanceMode) {
+        panel.hidden = true;
+        panel.innerHTML = '';
+        return;
+    }
+
+    const selectedPoint = getSelectedPoint();
+    const title = selectedPoint ? '지점 안내' : '사용 순서';
+    const steps = selectedPoint
+        ? [
+            `${selectedPoint.name} 지점을 골랐습니다.`,
+            '지도가 이 지점 중심으로 이동합니다.',
+            '복사 또는 공유를 눌러 같이 가는 사람에게 보내세요.'
+        ]
+        : [
+            '지도를 움직이거나 장소를 검색합니다.',
+            '아래 4단어 주소를 확인합니다.',
+            '복사 또는 공유를 눌러 바로 보냅니다.'
+        ];
+
+    panel.innerHTML = `
+        <div class="guidance-panel-title">${escapeHtml(title)}</div>
+        <ol class="guidance-panel-steps">
+            ${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}
+        </ol>
+    `;
+    panel.hidden = false;
+}
+
+async function loadPointPackFromUrl(url, sourceLabel = '샘플 팩') {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const pack = await response.json();
+        applyImportedPointPack(pack, sourceLabel);
+    } catch (error) {
+        console.error('Failed to load point pack:', error);
+        showToast('포인트 팩을 불러오지 못했습니다.');
+    }
+}
+
+async function handlePointPackFileSelection(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+        const raw = await file.text();
+        const parsed = JSON.parse(raw);
+        applyImportedPointPack(parsed, file.name);
+    } catch (error) {
+        console.error('Point pack import failed:', error);
+        showToast('포인트 팩 파일을 읽지 못했습니다.');
+    } finally {
+        event.target.value = '';
+    }
+}
+
+function applyImportedPointPack(pack, sourceLabel) {
+    const validationErrors = validatePointPack(pack);
+    if (validationErrors.length > 0) {
+        console.warn('Point pack validation failed:', validationErrors);
+        showToast('포인트 팩 검증에 실패했습니다.');
+        return;
+    }
+
+    const normalizedPack = normalizePointPack(pack);
+    if (!normalizedPack) {
+        showToast('포인트 팩 형식이 올바르지 않습니다.');
+        return;
+    }
+
+    activePointPack = normalizedPack;
+    activePointPackSource = sourceLabel;
+    selectPointById(normalizedPack.points[0]?.id, {
+        center: true,
+        announce: false,
+        preservePack: true
+    });
+    renderPointPackUI();
+    syncPointMarkers();
+    showToast(`${normalizedPack.name} 팩을 불러왔습니다.`);
+}
+
+function normalizePointPack(pack) {
+    if (!pack || !Array.isArray(pack.points)) return null;
+
+    const points = pack.points
+        .map(normalizePoint)
+        .filter(Boolean);
+
+    if (points.length === 0) return null;
+
+    return {
+        packId: typeof pack.packId === 'string' && pack.packId.trim() ? pack.packId.trim() : `pack-${Date.now()}`,
+        name: typeof pack.name === 'string' && pack.name.trim() ? pack.name.trim() : '이름 없는 포인트 팩',
+        summary: typeof pack.summary === 'string' ? pack.summary.trim() : '',
+        points
+    };
+}
+
+function normalizePoint(point) {
+    const lat = Number(point?.coordinates?.lat);
+    const lng = Number(point?.coordinates?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+    const id = typeof point.id === 'string' && point.id.trim()
+        ? point.id.trim()
+        : `point-${Math.random().toString(36).slice(2, 10)}`;
+
+    return {
+        id,
+        type: typeof point.type === 'string' ? point.type.trim() : 'meeting_point',
+        status: typeof point.status === 'string' ? point.status.trim() : 'reported',
+        name: typeof point.name === 'string' && point.name.trim() ? point.name.trim() : '이름 없는 지점',
+        description: typeof point.description === 'string' ? point.description.trim() : '',
+        gilmaruCode: typeof point.gilmaruCode === 'string' ? point.gilmaruCode.trim() : '',
+        accessibility: point.accessibility && typeof point.accessibility === 'object' ? point.accessibility : {},
+        coordinates: { lat, lng }
+    };
+}
+
+function getSelectedPoint() {
+    return activePointPack?.points.find((point) => point.id === selectedPointId) || null;
+}
+
+function clearSelectedPoint(options = {}) {
+    selectedPointId = null;
+    currentPlaceName = null;
+    if (!options.silent) {
+        renderPointPackUI();
+        syncPointMarkers();
+    }
+}
+
+function clearPointPack() {
+    activePointPack = null;
+    activePointPackSource = '';
+    clearSelectedPoint({ silent: true });
+    renderPointPackUI();
+    syncPointMarkers();
+    updateDetailAddress(map.getCenter().lat, map.getCenter().lng);
+    showToast('포인트 팩을 닫았습니다.');
+}
+
+function selectPointById(pointId, options = {}) {
+    if (!activePointPack) return;
+
+    const point = activePointPack.points.find((item) => item.id === pointId);
+    if (!point) return;
+
+    selectedPointId = point.id;
+    currentPlaceName = point.name;
+    currentRoadAddress = null;
+    renderPointPackUI();
+    syncPointMarkers();
+
+    if (options.center !== false) {
+        map.setCenter(point.coordinates.lat, point.coordinates.lng);
+        map.setLevel(2);
+    }
+
+    if (options.announce !== false) {
+        showToast(`${point.name} 지점으로 이동했습니다.`);
+    }
+}
+
+function syncPointMarkers() {
+    if (!map?.setPoints) return;
+
+    map.setPoints(activePointPack?.points || [], {
+        selectedPointId,
+        onSelect: (pointId) => {
+            selectPointById(pointId);
+        }
+    });
+}
+
+function renderPointPackUI() {
+    const panel = document.getElementById('point-pack-panel');
+    const sourceEl = document.getElementById('point-pack-source');
+    const titleEl = document.getElementById('point-pack-title');
+    const summaryEl = document.getElementById('point-pack-summary');
+    const selectedEl = document.getElementById('point-pack-selected');
+    const listEl = document.getElementById('point-pack-list');
+    const clearButton = document.getElementById('btn-clear-point-pack');
+
+    if (!activePointPack) {
+        panel.hidden = true;
+        selectedEl.hidden = true;
+        selectedEl.innerHTML = '';
+        listEl.innerHTML = '';
+        clearButton.hidden = true;
+        renderGuidancePanel();
+        return;
+    }
+
+    panel.hidden = false;
+    clearButton.hidden = false;
+    sourceEl.textContent = `${activePointPackSource || '불러온 팩'} · ${activePointPack.points.length}개 지점`;
+    titleEl.textContent = activePointPack.name;
+    summaryEl.textContent = activePointPack.summary || '지도 위에서 지점을 고르고 복사나 공유로 함께 보낼 수 있습니다.';
+
+    const selectedPoint = getSelectedPoint();
+    if (selectedPoint) {
+        const accessibilityLine = buildPointAccessibilityLine(selectedPoint);
+        selectedEl.innerHTML = `
+            <div class="point-pack-selected-header">
+                <div class="point-pack-selected-name" id="point-pack-selected-name">${escapeHtml(selectedPoint.name)}</div>
+                <div class="point-pack-selected-meta">
+                    <span class="point-pack-badge type">${escapeHtml(getPointTypeLabel(selectedPoint.type))}</span>
+                    <span class="point-pack-badge status status-${escapeHtml(selectedPoint.status)}">${escapeHtml(getPointStatusLabel(selectedPoint.status))}</span>
+                </div>
+            </div>
+            ${selectedPoint.description ? `<div class="point-pack-selected-description">${escapeHtml(selectedPoint.description)}</div>` : ''}
+            ${selectedPoint.gilmaruCode ? `<div class="point-pack-selected-detail">길마루 코드: ${escapeHtml(selectedPoint.gilmaruCode)}</div>` : ''}
+            ${accessibilityLine ? `<div class="point-pack-selected-detail">${escapeHtml(accessibilityLine)}</div>` : ''}
+            <div class="point-pack-selected-guidance" id="point-pack-selected-guidance">${escapeHtml(buildPointGuidanceText(selectedPoint))}</div>
+        `;
+        selectedEl.hidden = false;
+    } else {
+        selectedEl.hidden = true;
+        selectedEl.innerHTML = '';
+    }
+
+    listEl.innerHTML = activePointPack.points.map((point) => {
+        const isActive = point.id === selectedPointId;
+        return `
+            <button type="button" class="point-pack-item${isActive ? ' is-active' : ''}" data-point-id="${escapeHtml(point.id)}" role="listitem">
+                <div class="point-pack-item-name">${escapeHtml(point.name)}</div>
+                <div class="point-pack-item-meta">
+                    <span class="point-pack-badge type">${escapeHtml(getPointTypeLabel(point.type))}</span>
+                    <span class="point-pack-badge status status-${escapeHtml(point.status)}">${escapeHtml(getPointStatusLabel(point.status))}</span>
+                </div>
+                <div class="point-pack-item-detail">${escapeHtml(point.description || buildPointGuidanceText(point))}</div>
+            </button>
+        `;
+    }).join('');
+
+    renderGuidancePanel();
+}
+
+function buildPointAccessibilityLine(point) {
+    const parts = [];
+    if (point.accessibility?.stepFree === true) {
+        parts.push('계단 없이 접근 가능');
+    }
+
+    if (Number.isFinite(Number(point.accessibility?.doorWidthCm))) {
+        parts.push(`문 폭 약 ${Number(point.accessibility.doorWidthCm)}cm`);
+    }
+
+    if (typeof point.accessibility?.notes === 'string' && point.accessibility.notes.trim()) {
+        parts.push(point.accessibility.notes.trim());
+    }
+
+    return parts.join(' · ');
+}
+
+function buildPointGuidanceText(point) {
+    if (easyGuidanceMode) {
+        return `${point.name} 지점을 선택하면 지도가 이 위치로 이동합니다.`;
+    }
+
+    return `${getPointTypeLabel(point.type)} 지점입니다. 선택하면 현재 주소와 함께 공유할 수 있습니다.`;
+}
+
+function getPointTypeLabel(type) {
+    return POINT_TYPE_LABELS[type] || '커뮤니티 지점';
+}
+
+function getPointStatusLabel(status) {
+    return POINT_STATUS_LABELS[status] || '검토 필요';
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
 /* QR Code Logic */
@@ -479,6 +838,8 @@ function updateCenterAddress() {
 
         drawHighlightGrid(center.lat, center.lng);
         drawCanvasGrid(); // Redraw grid on move
+        renderPointPackUI();
+        syncPointMarkers();
 
         // 3. Update Browser URL (Deep Link Sync)
         // Update the URL without reloading page so users can copy/share immediately
@@ -558,6 +919,7 @@ function handleSearch() {
     const keyword = document.getElementById('search-input').value.trim();
     if (!keyword) return;
 
+    clearSelectedPoint();
     const parsedGilmaruAddress = parseGilmaruAddress(keyword);
     if (keyword.includes('.') || parsedGilmaruAddress) {
         currentPlaceName = null; // Reset place name as we are navigating by coordinates
@@ -773,6 +1135,7 @@ function selectSearchItem(item) {
     hideSearchResults();
     updateSearchStatus(`선택됨: ${name}`);
 
+    clearSelectedPoint();
     currentPlaceName = name;
     currentRoadAddress = addr;
 
@@ -796,6 +1159,7 @@ async function searchPlaces(keyword) {
         }
 
         const place = data[0];
+        clearSelectedPoint();
         currentPlaceName = place.place_name;
         currentRoadAddress = place.road_address_name || place.address_name;
         map.setCenter(Number(place.y), Number(place.x));
@@ -814,6 +1178,7 @@ function resolveGilmaruAddress(address, isSilent = false, parsedAddress = null) 
         return false;
     }
 
+    clearSelectedPoint();
     const originLon = 124.6;
     const originLat = 33.0;
     const subBlockSize = 0.0001;
@@ -839,6 +1204,7 @@ function moveToMyLocation() {
         navigator.geolocation.getCurrentPosition((position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            clearSelectedPoint();
             currentPlaceName = null;
             currentRoadAddress = null;
             map.setCenter(lat, lon);

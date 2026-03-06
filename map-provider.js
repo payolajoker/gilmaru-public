@@ -117,6 +117,7 @@ function createKakaoMapController() {
   const geocoder = new window.kakao.maps.services.Geocoder();
   const placesService = new window.kakao.maps.services.Places();
   let highlightRect = null;
+  let pointMarkers = [];
 
   return {
     id: 'kakao',
@@ -210,6 +211,26 @@ function createKakaoMapController() {
       });
       highlightRect.setMap(map);
     },
+    setPoints(points, { onSelect, selectedPointId } = {}) {
+      pointMarkers.forEach((marker) => marker.setMap(null));
+      pointMarkers = points.map((point) => {
+        const marker = new window.kakao.maps.Marker({
+          map,
+          position: new window.kakao.maps.LatLng(point.coordinates.lat, point.coordinates.lng),
+          title: point.name,
+        });
+
+        if (typeof marker.setZIndex === 'function') {
+          marker.setZIndex(point.id === selectedPointId ? 10 : 1);
+        }
+
+        if (typeof onSelect === 'function') {
+          window.kakao.maps.event.addListener(marker, 'click', () => onSelect(point.id));
+        }
+
+        return marker;
+      });
+    },
   };
 }
 
@@ -241,6 +262,7 @@ function createOpenStreetMapController(options = {}) {
 
   let highlightRect = null;
   let suppressNextMoveStart = false;
+  let pointMarkers = [];
 
   return {
     id: 'openstreetmap',
@@ -335,6 +357,25 @@ function createOpenStreetMapController(options = {}) {
           fillOpacity: 0.3,
         }
       ).addTo(map);
+    },
+    setPoints(points, { onSelect, selectedPointId } = {}) {
+      pointMarkers.forEach((marker) => marker.remove?.());
+      pointMarkers = points.map((point) => {
+        const isSelected = point.id === selectedPointId;
+        const marker = leaflet.circleMarker
+          ? leaflet.circleMarker([point.coordinates.lat, point.coordinates.lng], {
+              radius: isSelected ? 9 : 7,
+              color: isSelected ? '#0f766e' : '#2563eb',
+              weight: 2,
+              fillColor: isSelected ? '#14b8a6' : '#60a5fa',
+              fillOpacity: 0.92,
+            })
+          : leaflet.marker([point.coordinates.lat, point.coordinates.lng]);
+
+        marker.addTo(map);
+        marker.on?.('click', () => onSelect?.(point.id));
+        return marker;
+      });
     },
   };
 }

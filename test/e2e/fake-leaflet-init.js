@@ -82,6 +82,21 @@
     }
   }
 
+  function createMarker(coords, options = {}) {
+    return {
+      coords: normalizeCoords(coords),
+      options,
+      addTo() {
+        return this;
+      },
+      on(eventName, handler) {
+        addListener(this, eventName, handler);
+        return this;
+      },
+      remove() {},
+    };
+  }
+
   window.L = {
     map(container) {
       return new FakeLeafletMap(container);
@@ -109,6 +124,12 @@
         },
         remove() {},
       };
+    },
+    circleMarker(coords, options) {
+      return createMarker(coords, options);
+    },
+    marker(coords, options) {
+      return createMarker(coords, options);
     },
   };
 })();

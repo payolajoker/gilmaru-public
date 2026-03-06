@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
-import { validatePointPack } from '../scripts/validate-point-pack.mjs';
+import { validatePointPack } from '../point-pack-validator.js';
 
 const samplePath = new URL(
   '../data/point-packs/examples/seoul-cityhall-access-pack.json',

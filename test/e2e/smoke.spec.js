@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { wordA, wordB, wordC, wordD } from '../../word_data.js';
 
 const fakeKakaoPath = fileURLToPath(new URL('./fake-kakao-init.js', import.meta.url));
+const samplePointPackPath = fileURLToPath(new URL('../../data/point-packs/examples/gangnam-station-access-pack.json', import.meta.url));
 const LOADING_TEXT = '\uB85C\uB529\uC911...';
 const MAP_LOAD_FAILURE_TEXT = '\uC9C0\uB3C4 \uB85C\uB4DC \uC2E4\uD328';
 const TEST_ROAD_PREFIX = '\uC11C\uC6B8 \uD14C\uC2A4\uD2B8\uB85C';
@@ -160,4 +161,39 @@ test('resets searched place metadata when moving to current location', async ({ 
   await expect(page.locator('#toast')).toContainText('\uD604\uC7AC \uC704\uCE58\uB85C \uC774\uB3D9');
   await expect(page.locator('#road-address')).toContainText('37.5665,126.9780');
   await expect(page.locator('#road-address')).not.toContainText('alpha beta gamma park');
+});
+
+test('imports a point pack file and focuses a selected point', async ({ page }) => {
+  await page.goto('/');
+
+  await page.setInputFiles('#point-pack-input', samplePointPackPath);
+
+  await expect(page.locator('#point-pack-panel')).toBeVisible();
+  await expect(page.locator('#point-pack-title')).toContainText('Gangnam Station Access Pack');
+  await expect(page.locator('#point-pack-selected-name')).toContainText('Gangnam plaza meeting point');
+  await expect(page.locator('#place-name')).toContainText('Gangnam plaza meeting point');
+
+  await page.click('[data-point-id="gangnam-elevator-link"]');
+
+  await expect(page.locator('#point-pack-selected-name')).toContainText('Station elevator access');
+  await expect(page.locator('#place-name')).toContainText('Station elevator access');
+});
+
+test('toggles easy guidance mode and loads the sample point pack', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.locator('#point-pack-panel')).toBeVisible();
+  await page.click('#btn-toggle-guidance');
+  await expect(page.locator('body')).toHaveAttribute('data-guidance-mode', 'easy');
+  await expect(page.locator('#guidance-panel')).toBeVisible();
+  await expect(page.locator('#guidance-panel')).toContainText('복사 또는 공유');
+  await expect(page.locator('#point-pack-selected-guidance')).toContainText('지도가 이 위치로 이동합니다');
+
+  await page.click('#btn-clear-point-pack');
+  await expect(page.locator('#point-pack-panel')).not.toBeVisible();
+  await page.locator('#btn-load-sample-pack').scrollIntoViewIfNeeded();
+  await page.click('#btn-load-sample-pack');
+
+  await expect(page.locator('#point-pack-panel')).toBeVisible();
+  await expect(page.locator('#point-pack-source')).toContainText('샘플 팩');
 });
