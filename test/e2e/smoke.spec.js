@@ -80,6 +80,20 @@ test('keeps overlay controls above simulated map panes', async ({ page }) => {
   expect(hitTest).toBe(true);
 });
 
+test('keeps the primary action row reachable on a small mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+
+  await expect(page.locator('#point-pack-panel')).toBeHidden();
+
+  const qrBox = await page.locator('#btn-qr').boundingBox();
+  expect(qrBox).not.toBeNull();
+  expect(qrBox.y + qrBox.height).toBeLessThanOrEqual(568);
+
+  await page.locator('#btn-qr').click();
+  await expect(page.locator('#qr-modal')).toBeVisible();
+});
+
 test('resolves an explicit deep link code on first load', async ({ page }) => {
   const deepLinkCode = [wordD[0], wordB[0], wordA[0], wordC[0]].join('.');
 
