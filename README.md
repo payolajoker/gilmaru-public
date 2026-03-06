@@ -24,6 +24,13 @@ npm install
 npm run dev
 ```
 
+로컬 `open` 검색까지 같이 보려면:
+
+```bash
+npm run proxy:geocoder
+npm run dev
+```
+
 선택 설정:
 
 - `VITE_KAKAO_JS_KEY`
@@ -72,6 +79,7 @@ npm run build
 - [권리관계 표](./docs/rights-inventory.md)
 - [커뮤니티 로드맵](./docs/community-roadmap.md)
 - [공개 구조 메모](./docs/public-release-structure.md)
+- [Open 지오코더 프록시](./docs/open-geocoder-proxy.md)
 - [포인트 팩 기여 가이드](./docs/data-contribution-guide.md)
 - [포인트 팩 스키마](./docs/point-pack-spec.md)
 

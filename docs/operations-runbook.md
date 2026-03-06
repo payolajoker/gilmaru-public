@@ -15,6 +15,13 @@ npm install
 npm run dev
 ```
 
+`open` 지도 검색까지 로컬에서 확인하려면:
+
+```bash
+npm run proxy:geocoder
+npm run dev
+```
+
 ### Test
 ```bash
 npm run test -- --run
@@ -31,6 +38,7 @@ npm run build
 - Windows + 비ASCII 경로에서는 임시 ASCII 워크스페이스에서 빌드 후 `dist`를 복사합니다.
 - 순수 Vite 빌드 확인용: `npm run build:raw`
 - 빌드 시 `vite.config.js`가 `sw.js`를 `dist/sw.js`로 복사합니다.
+- `scripts/open-geocoder-proxy.mjs`는 로컬/자가호스팅용 Open 지오코더 프록시입니다.
 
 ### Preview
 ```bash
@@ -81,6 +89,7 @@ npm run preview
 - Kakao Maps JavaScript 키는 `VITE_KAKAO_JS_KEY`로 환경별 주입 가능합니다.
 - 로컬 기본값 예시는 `.env.example`에 있습니다.
 - 키 미주입 시 앱은 공개 JS 키 fallback을 사용합니다(`app.js`).
+- Open 지오코더 프록시는 `OPEN_GEOCODER_*` 환경변수로 조정할 수 있습니다.
 - 비밀키 저장 정책: `Not found in repo.`
 - 키 회전/폐기 절차: `Not found in repo.`
 

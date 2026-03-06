@@ -373,7 +373,7 @@ function createOpenStreetMapController(options = {}) {
         return buildLocalFallbackReverse(lat, lng);
       }
 
-      const url = new URL('/reverse', openGeocoder.baseUrl || DEFAULT_NOMINATIM_BASE_URL);
+      const url = buildOpenGeocoderUrl(openGeocoder.baseUrl, 'reverse');
       url.searchParams.set('format', 'jsonv2');
       url.searchParams.set('lat', String(lat));
       url.searchParams.set('lon', String(lng));
@@ -400,7 +400,7 @@ function createOpenStreetMapController(options = {}) {
         return [];
       }
 
-      const url = new URL('/search', openGeocoder.baseUrl || DEFAULT_NOMINATIM_BASE_URL);
+      const url = buildOpenGeocoderUrl(openGeocoder.baseUrl, 'search');
       url.searchParams.set('format', 'jsonv2');
       url.searchParams.set('q', keyword);
       url.searchParams.set('limit', String(limit));
@@ -494,6 +494,12 @@ function buildLocalFallbackReverse(lat, lng) {
     jibunAddress: formatted,
     buildingName: '',
   };
+}
+
+function buildOpenGeocoderUrl(baseUrl, path) {
+  const normalizedBase = String(baseUrl || DEFAULT_NOMINATIM_BASE_URL).replace(/\/+$/, '');
+  const normalizedPath = String(path || '').replace(/^\/+/, '');
+  return new URL(`${normalizedBase}/${normalizedPath}`);
 }
 
 function buildDisplayAddress(address, fallback = '') {

@@ -93,3 +93,85 @@ test('falls back to coordinate labels on local preview when direct geocoding is 
   await page.press('#search-input', 'Enter');
   await expect(page.locator('#toast')).toContainText('로컬 공개 모드에서는 장소 검색이 제한됩니다');
 });
+
+test('uses a configured proxy endpoint without touching the public Nominatim host', async ({ page }) => {
+  let proxyHits = 0;
+  let publicHits = 0;
+
+  await page.route('http://127.0.0.1:8787/nominatim/**', async (route) => {
+    proxyHits += 1;
+    const url = route.request().url();
+
+    if (url.includes('/reverse')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'access-control-allow-origin': '*',
+        },
+        body: JSON.stringify({
+          display_name: 'Proxy Road 7, Seocho, Seoul',
+          address: {
+            road: 'Proxy Road',
+            house_number: '7',
+            suburb: 'Seocho',
+            city: 'Seoul',
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.includes('/search')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'access-control-allow-origin': '*',
+        },
+        body: JSON.stringify([
+          {
+            name: 'Proxy Test Park',
+            display_name: 'Proxy Test Park, Proxy Road 7, Seocho, Seoul',
+            lat: '37.5020',
+            lon: '127.0380',
+            address: {
+              road: 'Proxy Road',
+              house_number: '7',
+              suburb: 'Seocho',
+              city: 'Seoul',
+              tourism: 'Proxy Test Park',
+            },
+          },
+        ]),
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.route('https://nominatim.openstreetmap.org/**', async (route) => {
+    publicHits += 1;
+    await route.abort();
+  });
+
+  await page.addInitScript(() => {
+    window.__GILMARU_CONFIG__ = {
+      ...(window.__GILMARU_CONFIG__ || {}),
+      openGeocoderMode: 'proxy',
+      openGeocoderBaseUrl: 'http://127.0.0.1:8787/nominatim',
+    };
+  });
+
+  await page.goto('?provider=open');
+
+  await expect(page.locator('#provider-status-text')).toContainText('프록시 지오코더');
+
+  await page.fill('#search-input', 'proxy test park');
+  await page.press('#search-input', 'Enter');
+
+  await expect(page.locator('#road-address')).toContainText('Proxy Road 7');
+  expect(proxyHits).toBeGreaterThan(0);
+  expect(publicHits).toBe(0);
+});
