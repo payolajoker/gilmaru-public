@@ -45,6 +45,39 @@ test('loads the app shell and resolves the initial address', async ({ page }) =>
   await expect(page.locator('#address-text')).not.toContainText(MAP_LOAD_FAILURE_TEXT);
   await expect(page.locator('#road-address')).toContainText(TEST_ROAD_PREFIX);
   await expect(page.locator('#sentence-text')).not.toHaveText('');
+  await expect(page.locator('#sentence-text .highlight-word')).toHaveCount(4);
+  await expect(page.locator('#point-pack-panel')).toBeHidden();
+});
+
+test('keeps overlay controls above simulated map panes', async ({ page }) => {
+  await page.goto('/');
+
+  await page.evaluate(() => {
+    const pane = document.createElement('canvas');
+    pane.className = 'leaflet-zoom-animated';
+    Object.assign(pane.style, {
+      position: 'absolute',
+      inset: '0',
+      zIndex: '400',
+      pointerEvents: 'auto',
+    });
+    document.getElementById('map')?.appendChild(pane);
+  });
+
+  const hitTest = await page.evaluate(() => {
+    const selectors = ['.search-btn', '#btn-my-location', '#btn-qr'];
+    return selectors.every((selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return false;
+      const rect = element.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const top = document.elementFromPoint(x, y);
+      return top === element || element.contains(top);
+    });
+  });
+
+  expect(hitTest).toBe(true);
 });
 
 test('resolves an explicit deep link code on first load', async ({ page }) => {
@@ -198,20 +231,20 @@ test('imports a point pack file and focuses a selected point', async ({ page }) 
 test('toggles easy guidance mode and loads the sample point pack', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.locator('#point-pack-panel')).toBeVisible();
+  await expect(page.locator('#point-pack-panel')).toBeHidden();
   await page.click('#btn-toggle-guidance');
   await expect(page.locator('body')).toHaveAttribute('data-guidance-mode', 'easy');
   await expect(page.locator('#guidance-panel')).toBeVisible();
   await expect(page.locator('#guidance-panel')).toContainText('복사 또는 공유');
-  await expect(page.locator('#point-pack-selected-guidance')).toContainText('지도가 이 위치로 이동합니다');
-
-  await page.click('#btn-clear-point-pack');
-  await expect(page.locator('#point-pack-panel')).not.toBeVisible();
   await page.locator('#btn-load-sample-pack').scrollIntoViewIfNeeded();
   await page.click('#btn-load-sample-pack');
 
   await expect(page.locator('#point-pack-panel')).toBeVisible();
   await expect(page.locator('#point-pack-source')).toContainText('샘플 팩');
+  await expect(page.locator('#point-pack-selected-guidance')).toContainText('지도가 이 위치로 이동합니다');
+
+  await page.click('#btn-clear-point-pack');
+  await expect(page.locator('#point-pack-panel')).toBeHidden();
 });
 
 test('persists contrast and large text preferences across reloads', async ({ page }) => {

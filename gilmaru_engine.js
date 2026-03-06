@@ -49,7 +49,7 @@ export function generateSentence(words, seed) {
     }
 
     const shuffledWords = shuffledIdx.map((index) => words[index]);
-    const highlightWord = (word) => `<span class="highlight-word">${word}</span>`;
+    const highlightWord = (word) => `<span class="highlight-word">${escapeHtml(word)}</span>`;
     const templateIndex = Math.floor(seededRandom() * 5);
     const [word1, word2, word3, word4] = shuffledWords;
 
@@ -70,6 +70,15 @@ export function generateSentence(words, seed) {
     }
 
     return `${highlightWord(word1)}${getJosa(word1, 'iga')} ${highlightWord(word2)}${getJosa(word2, 'eulreul')} 만나 ${highlightWord(word3)}${getJosa(word3, 'wagwa')} ${highlightWord(word4)}`;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 export function createGilmaruResolver(wordGroups, options = {}) {

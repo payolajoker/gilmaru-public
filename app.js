@@ -120,7 +120,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initEventListeners();
     applyGuidanceMode();
     renderPointPackUI();
-    await loadPointPackFromUrl(SAMPLE_POINT_PACK_URL, '기본 샘플 팩');
     setTimeout(initDeepLink, 1000); // Small delay to ensure map is ready
 });
 
@@ -145,7 +144,7 @@ function updateProviderStatus() {
     const suffix = mapProviderInfo.id === 'openstreetmap'
         ? ' · OpenStreetMap public mode'
         : '';
-    versionEl.textContent = `Gilmaru v1.7.9${suffix}`;
+    versionEl.textContent = `Gilmaru v1.7.10${suffix}`;
 }
 
 function safeStorageGet(key) {
@@ -397,10 +396,21 @@ function setBusyState(element, isBusy, label) {
     }
 }
 
-function renderSentenceText(sentence) {
+function renderSentenceText(sentence, options = {}) {
     const sentenceEl = document.getElementById('sentence-text');
     if (sentenceEl) {
-        sentenceEl.textContent = sentence ? `"${sentence}"` : '';
+        const { isHtml = true } = options;
+        if (!sentence) {
+            sentenceEl.textContent = '';
+            return;
+        }
+
+        if (isHtml) {
+            sentenceEl.innerHTML = `"${sentence}"`;
+            return;
+        }
+
+        sentenceEl.textContent = `"${sentence}"`;
     }
 }
 
@@ -431,6 +441,7 @@ function persistSnapshot(code = '') {
         code,
         addressText,
         sentence: document.getElementById('sentence-text')?.textContent?.trim() || '',
+        sentenceHtml: document.getElementById('sentence-text')?.innerHTML?.trim() || '',
         roadAddress: currentRoadAddress || document.getElementById('road-address')?.textContent?.trim() || '',
         placeName: currentPlaceName || document.getElementById('place-name')?.textContent?.trim() || '',
         timestamp: new Date().toISOString()
@@ -452,7 +463,7 @@ function restoreCachedSnapshot() {
 
         restoredSnapshot = snapshot;
         renderAddressText(snapshot.addressText.trim());
-        renderSentenceText(snapshot.sentence || '');
+        renderSentenceText(snapshot.sentenceHtml || snapshot.sentence || '', { isHtml: Boolean(snapshot.sentenceHtml) });
         renderRoadAndPlace(snapshot.roadAddress || '', snapshot.placeName || '');
     } catch (error) {
         console.warn('Cached snapshot restore failed:', error);
@@ -468,7 +479,7 @@ function handleMapLoadFailure(reason = 'sdk-load-failed') {
 
     if (hasRestoredSnapshot && navigator.onLine === false) {
         renderAddressText(restoredSnapshot.addressText);
-        renderSentenceText(restoredSnapshot.sentence || '');
+        renderSentenceText(restoredSnapshot.sentenceHtml || restoredSnapshot.sentence || '', { isHtml: Boolean(restoredSnapshot.sentenceHtml) });
         renderRoadAndPlace(restoredSnapshot.roadAddress || '', restoredSnapshot.placeName || '');
         showToast('오프라인이라 마지막으로 본 주소를 보여줍니다.');
         return;

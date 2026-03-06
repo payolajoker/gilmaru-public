@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'gilmaru-runtime-v1.7.9-20260307';
+const CACHE_VERSION = 'gilmaru-runtime-v1.7.10-20260307';
 const OFFLINE_FALLBACKS = ['./', './index.html'];
 const CORE_CACHE_URLS = [
     './manifest.json',
