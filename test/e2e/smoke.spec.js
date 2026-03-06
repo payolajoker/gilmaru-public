@@ -128,6 +128,22 @@ test('opens the QR modal with the current address and closes it again', async ({
   await expect(page.locator('#qr-modal')).not.toBeVisible();
 });
 
+test('downloads a QR card image using the local runtime bundle', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.locator('#address-text')).not.toContainText(LOADING_TEXT);
+  await page.click('#btn-qr');
+  await expect(page.locator('#qr-modal')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.click('#btn-save-image');
+  const download = await downloadPromise;
+
+  await expect(page.locator('#btn-save-image')).not.toHaveClass(/is-busy/);
+  expect(download.suggestedFilename()).toContain('gilmaru-card-');
+  expect(download.suggestedFilename()).toContain('.png');
+});
+
 test('opens the intro modal and restores focus to the trigger when closed', async ({ page }) => {
   await page.goto('/');
 

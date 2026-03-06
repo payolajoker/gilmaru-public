@@ -98,6 +98,26 @@ body::after {
   outline-offset: 2px;
 }
 
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icon {
+  width: 1.1em;
+  height: 1.1em;
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
 /* Map Container */
 #map-container {
   position: relative;
@@ -170,7 +190,7 @@ body::after {
   box-shadow: var(--shadow-lg);
 }
 
-.search-box.is-loading .search-btn .material-icons {
+.search-box.is-loading .search-btn .icon {
   animation: searchSpin 0.85s linear infinite;
   opacity: 0.75;
 }
@@ -199,6 +219,12 @@ body::after {
   align-items: center;
   justify-content: center;
   padding: 8px;
+}
+
+.search-btn .icon,
+.fab .icon {
+  width: 20px;
+  height: 20px;
 }
 
 .search-btn:hover {
@@ -324,9 +350,11 @@ body::after {
 }
 
 .gilmaru-address .copy-icon {
-  font-size: 16px;
+  width: 16px;
+  height: 16px;
   color: var(--text-gray);
   vertical-align: middle;
+  margin-left: 6px;
 }
 
 .address-hint {
@@ -946,6 +974,11 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
   transition: background-color 0.2s;
 }
 
+.close-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
 .close-btn:hover {
   background-color: #f3f4f6;
 }
@@ -1097,15 +1130,19 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
   display: none;
 }
 
-.tech-specs summary::after {
-  content: "expand_more";
-  font-family: 'Material Icons';
-  font-size: 16px;
-  transition: transform 0.2s;
+.summary-chevron {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+  transition: transform 0.2s ease;
+  margin-left: 2px;
 }
 
-.tech-specs[open] summary::after {
-  transform: rotate(180deg);
+.tech-specs[open] .summary-chevron {
+  transform: rotate(225deg) translateY(1px);
 }
 
 .specs-content {
@@ -1224,15 +1261,29 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
 
 /* Zoom Icon (was inline) */
 .zoom-icon {
-  font-size: 16px;
+  width: 16px;
+  height: 16px;
   color: var(--primary-color);
 }
 
 /* Intro Feature Icons */
-.intro-icon {
-  font-size: 20px;
-  color: var(--primary-color);
+.intro-icon-shell {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(15, 118, 110, 0.12));
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   flex-shrink: 0;
+}
+
+.intro-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--primary-color);
 }
 
 /* Modal Footer Contact (was inline) */
@@ -1297,9 +1348,22 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
   padding: 8px 16px;
 }
 
+.btn .button-icon,
 .qr-save-icon {
-  font-size: 18px;
+  width: 18px;
+  height: 18px;
   margin-right: 4px;
+}
+
+.btn.is-busy,
+.search-btn.is-busy {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+.btn.is-busy .icon,
+.search-btn.is-busy .icon {
+  animation: searchSpin 0.85s linear infinite;
 }
 
 .qr-save-label {
@@ -1309,6 +1373,13 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
 .qr-close-btn {
   background: white;
   color: #333;
+}
+
+.qr-fallback {
+  font-size: 13px;
+  color: #6b7280;
+  padding: 18px 12px;
+  text-align: center;
 }
 
 /* Search Results Dropdown */

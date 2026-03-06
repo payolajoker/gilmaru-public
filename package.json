@@ -1,6 +1,6 @@
 {
   "name": "gilmaru",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "description": "Gilmaru public repository export with app, data, scripts, and tests",
   "main": "app.js",
   "type": "module",

@@ -19,6 +19,7 @@ let easyGuidanceMode = false;
 let highContrastMode = false;
 let largeTextMode = false;
 let restoredSnapshot = null;
+const runtimeScriptPromises = new Map();
 
 const FOCUSABLE_SELECTOR = [
     'button:not([disabled])',
@@ -42,6 +43,8 @@ const SAMPLE_POINT_PACK_URL = new URL(
     './data/point-packs/examples/gangnam-station-access-pack.json',
     import.meta.url
 ).toString();
+const QRCODE_RUNTIME_URL = new URL('./vendor/qrcode.min.js', import.meta.url).toString();
+const HTML2CANVAS_RUNTIME_URL = new URL('./vendor/html2canvas.min.js', import.meta.url).toString();
 const STORAGE_KEYS = {
     mapProviderPreference: 'gilmaru.mapProviderPreference',
     contrastMode: 'gilmaru.contrastMode',
@@ -142,7 +145,7 @@ function updateProviderStatus() {
     const suffix = mapProviderInfo.id === 'openstreetmap'
         ? ' · OpenStreetMap public mode'
         : '';
-    versionEl.textContent = `Gilmaru v1.7.8${suffix}`;
+    versionEl.textContent = `Gilmaru v1.7.9${suffix}`;
 }
 
 function safeStorageGet(key) {
@@ -325,7 +328,73 @@ function getCurrentAddressText() {
 function renderAddressText(addressText) {
     const addressEl = document.getElementById('address-text');
     if (!addressEl) return;
-    addressEl.innerHTML = `${escapeHtml(addressText)} <span class="material-icons copy-icon" aria-hidden="true">content_copy</span>`;
+    addressEl.innerHTML = `${escapeHtml(addressText)} ${getIconMarkup('copy', 'copy-icon')}`;
+}
+
+function getIconMarkup(iconName, extraClassName = '') {
+    const classes = ['icon'];
+    if (extraClassName) classes.push(extraClassName);
+    return `<svg class="${classes.join(' ')}" aria-hidden="true" focusable="false"><use href="#icon-${escapeHtml(iconName)}"></use></svg>`;
+}
+
+function loadExternalRuntime({ key, src, globalName }) {
+    if (window[globalName]) {
+        return Promise.resolve(window[globalName]);
+    }
+
+    if (runtimeScriptPromises.has(key)) {
+        return runtimeScriptPromises.get(key);
+    }
+
+    const promise = new Promise((resolve, reject) => {
+        const existingScript = document.querySelector(`script[data-runtime-key="${key}"]`);
+        if (existingScript) {
+            existingScript.addEventListener('load', () => resolve(window[globalName]), { once: true });
+            existingScript.addEventListener('error', () => reject(new Error(`Runtime load failed: ${key}`)), { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.dataset.runtimeKey = key;
+        script.onload = () => resolve(window[globalName]);
+        script.onerror = () => reject(new Error(`Runtime load failed: ${key}`));
+        document.head.appendChild(script);
+    });
+
+    runtimeScriptPromises.set(key, promise);
+    return promise;
+}
+
+function loadQRCodeRuntime() {
+    return loadExternalRuntime({
+        key: 'qrcode',
+        src: QRCODE_RUNTIME_URL,
+        globalName: 'QRCode'
+    });
+}
+
+function loadHtml2CanvasRuntime() {
+    return loadExternalRuntime({
+        key: 'html2canvas',
+        src: HTML2CANVAS_RUNTIME_URL,
+        globalName: 'html2canvas'
+    });
+}
+
+function setBusyState(element, isBusy, label) {
+    if (!element) return;
+
+    element.classList.toggle('is-busy', isBusy);
+    element.disabled = isBusy;
+
+    if (label) {
+        if (!element.dataset.idleLabel) {
+            element.dataset.idleLabel = element.textContent.trim();
+        }
+        element.setAttribute('aria-label', isBusy ? label : element.dataset.idleLabel || element.getAttribute('aria-label') || '');
+    }
 }
 
 function renderSentenceText(sentence) {
@@ -941,7 +1010,7 @@ function escapeHtml(value) {
 }
 
 /* QR Code Logic */
-function showQRCode() {
+async function showQRCode() {
     const qrModal = document.getElementById('qr-modal');
     const center = map.getCenter();
     const gilmaru = latLngToGilmaru(center.lat, center.lng, 1); // Force precision level 1
@@ -968,14 +1037,22 @@ function showQRCode() {
 
     const qrContainer = document.getElementById('qr-code-display');
     qrContainer.innerHTML = "";
-    new QRCode(qrContainer, {
-        text: link,
-        width: 140,
-        height: 140,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-    });
+    qrContainer.dataset.qrText = link;
+
+    try {
+        const QRCodeRuntime = await loadQRCodeRuntime();
+        new QRCodeRuntime(qrContainer, {
+            text: link,
+            width: 140,
+            height: 140,
+            colorDark: '#111827',
+            colorLight: '#ffffff',
+            correctLevel: QRCodeRuntime.CorrectLevel.H
+        });
+    } catch (error) {
+        console.error('QR code generation failed:', error);
+        qrContainer.innerHTML = '<div class="qr-fallback">QR 코드를 불러오지 못했습니다.</div>';
+    }
 
     openModal(qrModal, { display: 'flex', initialFocusSelector: '#btn-save-image' });
 }
@@ -1032,23 +1109,29 @@ function closeModal(modal) {
     lastFocusedElement = null;
 }
 
-function saveQRImage() {
+async function saveQRImage() {
     const element = document.getElementById('qr-card-container');
+    const saveButton = document.getElementById('btn-save-image');
+    setBusyState(saveButton, true, '이미지를 준비 중입니다.');
 
-    html2canvas(element, {
-        scale: 2, // High resolution
-        backgroundColor: null, // Transparent background handled by element CSS
-        logging: false,
-        useCORS: true
-    }).then(canvas => {
+    try {
+        const html2canvasRuntime = await loadHtml2CanvasRuntime();
+        const canvas = await html2canvasRuntime(element, {
+            scale: 2,
+            backgroundColor: null,
+            logging: false,
+            useCORS: true
+        });
         const link = document.createElement('a');
         link.download = `gilmaru-card-${Date.now()}.png`;
         link.href = canvas.toDataURL();
         link.click();
-    }).catch(err => {
+    } catch (err) {
         console.error("Image save failed:", err);
-        alert("이미지 저장 중 오류가 발생했습니다.");
-    });
+        alert('이미지 저장 중 오류가 발생했습니다.');
+    } finally {
+        setBusyState(saveButton, false, '이미지를 준비 중입니다.');
+    }
 }
 
 /* Core Logic: Map & Grid */

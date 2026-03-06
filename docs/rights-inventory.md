@@ -28,7 +28,7 @@
 ### B. 외부 서비스 의존 자산
 
 - Kakao Maps / Places 연동 코드
-- Google Fonts / Material Icons / jsDelivr Pretendard / QRCode.js / html2canvas CDN 로딩
+- jsDelivr Pretendard 웹폰트 로딩, 로컬 SVG 아이콘 스프라이트, 벤더 번들 `QRCode.js` / `html2canvas`
 - `package-lock.json`에 기록된 npm 의존 패키지
 
 이 그룹은 저장소 코드와 별개로 `업스트림 라이선스 또는 이용약관`을 따라야 한다.
@@ -66,7 +66,7 @@
 | 백업 파일 | `app.js.bak` | 내부 백업본 | 조건부 공개 | 낮음 | 배포/오픈소스 전환 시 제외 권장 |
 | npm 의존 패키지 기록 | `package-lock.json` | 외부 패키지 메타데이터 | 조건부 공개 | 중간 | 자체 라이선스 문서 대상은 아니고, 업스트림 고지/NOTICE가 필요 |
 | Kakao SDK/Places 연동 | `app.js`의 Kakao SDK URL 및 지도/장소 검색 연동 | 외부 서비스 | 조건부 공개 | 높음 | Kakao 약관과 도메인 등록 조건의 영향을 받음. 저장소 코드는 공개 가능해도 SDK 자체를 재라이선스할 수는 없음 |
-| 웹폰트/아이콘/유틸 CDN | `index.html`의 Pretendard, Material Icons, QRCode.js, html2canvas 링크 | 외부 오픈소스/외부 서비스 | 조건부 공개 | 중간 | 사용 가능 라이선스가 확인되는 자산이 많지만, 고지와 버전 고정이 필요 |
+| 웹폰트/아이콘/유틸 런타임 | `index.html`의 Pretendard 링크, `vendor/qrcode.min.js`, `vendor/html2canvas.min.js`, 인라인 SVG 아이콘 | 외부 오픈소스/저장소 작성물 혼합 | 조건부 공개 | 중간 | 아이콘은 저장소 작성물이지만, Pretendard와 벤더 파일은 각자 고지와 업스트림 라이선스 유지가 필요 |
 | TOPIK 원본 데이터 | `topik_vocabulary_combined.csv` | 외부 데이터 | 즉시 공개 가능(maintainer 확인) | 높음 | 유지보수자 확인 전제를 반영한다. 공개 저장소에 포함 가능 |
 | MeCab 기반 원본 데이터 | `mecab_nng.csv`, `mecab_nnp.csv`, `mecab_va.csv` | 외부 데이터 또는 외부 사전 추출물 | 즉시 공개 가능(maintainer 확인) | 높음 | 유지보수자 확인 전제를 반영한다. 원출처 메모는 계속 가치가 있다 |
 | TOPIK 파생 목록 | `topik1_adjectives.txt` | `topik_vocabulary_combined.csv` 파생 | 즉시 공개 가능(maintainer 확인) | 높음 | 공개 저장소에 함께 둘 수 있다 |
@@ -150,15 +150,15 @@
 
 ### 4-5. 외부 서비스/자산 로딩 근거
 
-`index.html` 과 `app.js` 는 아래 외부 자산을 로딩한다.
+`index.html` 과 `app.js` 는 현재 아래 자산과 서비스를 사용한다.
 
 - Kakao Maps JavaScript SDK / Places
 - Pretendard 웹폰트(jsDelivr)
-- Google Fonts Material Icons
-- QRCode.js(CDN)
-- html2canvas(CDN)
+- 로컬 벤더 `vendor/qrcode.min.js`
+- 로컬 벤더 `vendor/html2canvas.min.js`
+- 저장소 내부 인라인 SVG 아이콘 스프라이트
 
-따라서 코드 저장소 자체를 공개하더라도, 실제 서비스 제공에는 `업스트림 라이선스/약관/브랜드 정책` 검토가 필요하다.
+따라서 코드 저장소 자체를 공개하더라도, 실제 서비스 제공에는 `업스트림 라이선스/약관/브랜드 정책` 검토가 필요하다. 다만 QR 생성과 이미지 저장 런타임은 더 이상 외부 CDN 의존이 아니라 저장소 내부 벤더 파일로 관리된다.
 
 ### 4-6. Kakao SDK 조사
 
@@ -193,8 +193,8 @@
 
 판단:
 
-- 현재 `fonts.googleapis.com/icon?family=Material+Icons` 사용은 권리상 큰 문제는 작다.
-- 다만 Apache 2.0 자산이라는 사실을 문서화하는 편이 좋다.
+- 현재 공개 저장소 런타임은 Material Icons에 의존하지 않는다.
+- 이 항목은 과거 조사 기록으로만 남기고, 재도입 시 Apache 2.0 고지를 다시 검토하면 된다.
 
 #### QRCode.js
 
@@ -202,7 +202,7 @@
 
 판단:
 
-- 포함 또는 자체 호스팅 전환이 쉬운 자산이다.
+- 현재는 `vendor/qrcode.min.js`로 저장소 내부에 벤더링되어 있으며, 업스트림 MIT 라이선스를 유지해야 한다.
 
 #### html2canvas
 
@@ -210,7 +210,7 @@
 
 판단:
 
-- 포함 또는 자체 호스팅 전환이 쉬운 자산이다.
+- 현재는 `vendor/html2canvas.min.js`로 저장소 내부에 벤더링되어 있으며, 업스트림 MIT 라이선스를 유지해야 한다.
 
 ## 5. 즉시 할 일
 
@@ -254,7 +254,6 @@
 
 - Kakao 연동 코드
 - Pretendard
-- Material Icons
 - QRCode.js
 - html2canvas
 
@@ -264,7 +263,7 @@
 
 - `코드와 문서`: 공개 전환 가능
 - `단어 데이터 체계`: 유지보수자 확인 전제하에 공개 전환 가능
-- `Kakao 및 외부 CDN 의존`: 사용 조건 정리 필요
+- `Kakao 및 외부 폰트 의존`: 사용 조건 정리 필요
 - `핵심 남은 이슈`: 외부 서비스 약관, 라이선스 문서화, 공개 저장소 운영 구조
 
 즉, 현재 남은 핵심 작업은 `데이터 제거`가 아니라 `공개 저장소 운영 문서와 라이선스 구조 확정`이다.

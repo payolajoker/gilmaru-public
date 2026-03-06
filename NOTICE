@@ -11,9 +11,9 @@ Important examples in the current app stack include:
 
 - Kakao Maps JavaScript SDK / Places
 - Pretendard
-- Material Icons
-- QRCode.js
-- html2canvas
+- vendored `qrcode.min.js` from QRCode.js
+- vendored `html2canvas.min.js` from html2canvas
+- inline SVG icons authored for this repository
 
 Current public-release assumption:
 
@@ -27,3 +27,4 @@ This repository notice should be read together with:
 - `docs/licenses/code.md`
 - `docs/licenses/data.md`
 - `docs/licenses/docs.md`
+- `vendor/README.md`

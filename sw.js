@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'gilmaru-runtime-v1.7.8-20260307';
+const CACHE_VERSION = 'gilmaru-runtime-v1.7.9-20260307';
 const OFFLINE_FALLBACKS = ['./', './index.html'];
 const CORE_CACHE_URLS = [
     './manifest.json',
@@ -9,6 +9,8 @@ const CORE_CACHE_URLS = [
     './map-provider.js',
     './point-pack-validator.js',
     './word_data.js',
+    './vendor/qrcode.min.js',
+    './vendor/html2canvas.min.js',
     './data/point-packs/examples/gangnam-station-access-pack.json',
     './data/point-packs/examples/seoul-cityhall-access-pack.json',
     './icons/icon.svg'
