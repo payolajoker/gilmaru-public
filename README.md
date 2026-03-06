@@ -44,6 +44,12 @@ npm run dev
 - `.env.example`
 - `gilmaru.config.local.example.json`
 
+## Runtime note
+
+- Leaflet now ships from the repository-local `vendor/leaflet/` directory instead of `unpkg`.
+- QR rendering and PNG export stay local through vendored runtime files.
+- The app no longer depends on an external Pretendard font CDN and now uses a curated Korean-friendly system font stack.
+
 로컬 `127.0.0.1` / `localhost` 프리뷰에서 `open` 모드는 기본적으로 `fallback`
 좌표 안내로 동작합니다. 공용 Nominatim 브라우저 직접 호출은 CORS와 사용정책에
 걸릴 수 있으므로, 로컬 검색이 필요하면 프록시 URL을 설정하세요.

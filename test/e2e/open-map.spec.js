@@ -61,6 +61,27 @@ test('loads the OpenStreetMap fallback when requested', async ({ page }) => {
   await expect(page.locator('#sentence-text')).not.toHaveText('');
 });
 
+test('does not request external asset CDNs for fonts or Leaflet', async ({ page }) => {
+  let unpkgHits = 0;
+  let jsdelivrHits = 0;
+
+  await page.route('https://unpkg.com/**', async (route) => {
+    unpkgHits += 1;
+    await route.abort();
+  });
+
+  await page.route('https://cdn.jsdelivr.net/**', async (route) => {
+    jsdelivrHits += 1;
+    await route.abort();
+  });
+
+  await page.goto('?provider=open&geocoder=fallback');
+
+  await expect(page.locator('#provider-status-text')).toContainText('OpenStreetMap');
+  expect(unpkgHits).toBe(0);
+  expect(jsdelivrHits).toBe(0);
+});
+
 test('searches a place in OpenStreetMap mode on submit', async ({ page }) => {
   await page.goto('?provider=open&geocoder=direct');
 

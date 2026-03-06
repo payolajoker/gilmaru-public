@@ -149,7 +149,7 @@ function updateProviderStatus() {
     const suffix = mapProviderInfo.id === 'openstreetmap'
         ? ' · OpenStreetMap public mode'
         : '';
-    versionEl.textContent = `Gilmaru v1.7.12${suffix}`;
+    versionEl.textContent = `Gilmaru v1.7.13${suffix}`;
 }
 
 function safeStorageGet(key) {

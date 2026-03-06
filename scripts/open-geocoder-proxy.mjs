@@ -8,7 +8,7 @@ export const DEFAULT_PROXY_PORT = 8787;
 export const DEFAULT_CACHE_TTL_MS = 60_000;
 export const DEFAULT_TIMEOUT_MS = 8_000;
 export const DEFAULT_USER_AGENT =
-  'GilmaruOpenGeocoderProxy/1.7.12 (+https://github.com/payolajoker/gilmaru-public)';
+  'GilmaruOpenGeocoderProxy/1.7.13 (+https://github.com/payolajoker/gilmaru-public)';
 
 const ROUTE_QUERY_WHITELIST = {
   '/reverse': new Set([

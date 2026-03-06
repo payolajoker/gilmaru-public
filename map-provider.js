@@ -2,13 +2,14 @@ const DEFAULT_KAKAO_KEY_HOSTS = new Set(['payolajoker.github.io']);
 const DEFAULT_RUNTIME_CONFIG_PATHS = ['gilmaru.config.local.json', 'gilmaru.config.json'];
 const DEFAULT_KAKAO_SDK_TIMEOUT_MS = 10000;
 const DEFAULT_KAKAO_SDK_MAX_RETRIES = 1;
-const DEFAULT_LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-const DEFAULT_LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const DEFAULT_LEAFLET_JS_URL = new URL('./vendor/leaflet/leaflet.js', import.meta.url).toString();
+const DEFAULT_LEAFLET_CSS_URL = new URL('./vendor/leaflet/leaflet.css', import.meta.url).toString();
 const DEFAULT_TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const DEFAULT_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const DEFAULT_NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
 const OPEN_GEOCODER_MODES = new Set(['auto', 'direct', 'proxy', 'fallback']);
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1']);
+let leafletLoadPromise = null;
 
 export async function createMapController(options = {}) {
   const requestedProvider = resolveRequestedProvider(options.search || window.location.search, options.env?.VITE_MAP_PROVIDER);
@@ -528,6 +529,10 @@ function leafletZoomToAppLevel(zoom) {
 
 async function ensureLeafletLoaded(options) {
   if (window.L?.map) return;
+  if (leafletLoadPromise) {
+    await leafletLoadPromise;
+    return;
+  }
 
   ensureExternalStylesheet({
     selector: 'link[data-leaflet-css="true"]',
@@ -541,8 +546,17 @@ async function ensureLeafletLoaded(options) {
     dataset: { leafletJs: 'true' },
   });
 
-  await waitForScriptLoad('script[data-leaflet-js="true"]', 10000);
-  if (!window.L?.map) throw new Error('Leaflet failed to initialize');
+  leafletLoadPromise = waitForScriptLoad('script[data-leaflet-js="true"]', 10000)
+    .then(() => {
+      if (!window.L?.map) throw new Error('Leaflet failed to initialize');
+    })
+    .finally(() => {
+      if (!window.L?.map) {
+        leafletLoadPromise = null;
+      }
+    });
+
+  await leafletLoadPromise;
 }
 
 function ensureExternalStylesheet({ selector, href, dataset = {} }) {

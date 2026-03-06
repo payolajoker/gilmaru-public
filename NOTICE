@@ -10,7 +10,7 @@ External dependencies and services still carry their own terms or licenses.
 Important examples in the current app stack include:
 
 - Kakao Maps JavaScript SDK / Places
-- Pretendard
+- vendored `leaflet.js` / `leaflet.css` from Leaflet
 - vendored `qrcode.min.js` from QRCode.js
 - vendored `html2canvas.min.js` from html2canvas
 - inline SVG icons authored for this repository

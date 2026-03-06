@@ -1,6 +1,6 @@
 {
   "name": "gilmaru",
-  "version": "1.7.12",
+  "version": "1.7.13",
   "description": "Gilmaru public repository export with app, data, scripts, and tests",
   "main": "app.js",
   "type": "module",
@@ -29,6 +29,7 @@
     "workbox-window": "^7.4.0"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "pptxgenjs": "^4.0.1"
   }
 }

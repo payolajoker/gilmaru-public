@@ -1,5 +1,6 @@
 /* Global Styles */
 :root {
+  --font-sans: "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --primary-color: #3B82F6;
   --primary-dark: #2563EB;
   --text-dark: #1F2937;
@@ -30,11 +31,21 @@
 }
 
 body {
-  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-sans);
   overflow: hidden;
   /* Prevent scroll on mobile */
   background-color: var(--bg-light);
   color: var(--text-dark);
+  letter-spacing: -0.012em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 body[data-connectivity="offline"] {
@@ -333,6 +344,7 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  letter-spacing: -0.03em;
 }
 
 .gilmaru-address-btn {
@@ -603,6 +615,7 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
   margin: 0;
   font-size: 18px;
   color: var(--text-dark);
+  letter-spacing: -0.025em;
 }
 
 .point-pack-summary {
@@ -1016,6 +1029,7 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
   font-size: 18px;
   font-weight: 700;
   color: var(--text-dark);
+  letter-spacing: -0.025em;
 }
 
 .close-btn {
@@ -1060,6 +1074,7 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
   font-size: 18px;
   display: block;
   margin-bottom: 8px;
+  letter-spacing: -0.03em;
 }
 
 .highlight {
@@ -1280,6 +1295,7 @@ body[data-contrast-mode="high"] .utility-chip-ghost {
   margin: 0 0 8px 0;
   line-height: 1.3;
   word-break: keep-all;
+  letter-spacing: -0.03em;
 }
 
 .qr-card .gilmaru-address .highlight-word {

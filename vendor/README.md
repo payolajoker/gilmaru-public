@@ -5,6 +5,12 @@ to reduce CDN dependence for core public-app flows.
 
 Included files:
 
+- `leaflet/leaflet.js`, `leaflet/leaflet.css`, `leaflet/images/*`
+  - upstream: `Leaflet`
+  - source: https://github.com/Leaflet/Leaflet
+  - license: BSD-2-Clause
+  - role: local OpenStreetMap map runtime without CDN dependence
+
 - `qrcode.min.js`
   - upstream: `davidshimjs/qrcodejs`
   - source: https://github.com/davidshimjs/qrcodejs
