@@ -9,7 +9,7 @@ const DEFAULT_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/
 const DEFAULT_NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
 
 export async function createMapController(options = {}) {
-  const requestedProvider = resolveRequestedProvider(options.search || window.location.search);
+  const requestedProvider = resolveRequestedProvider(options.search || window.location.search, options.env?.VITE_MAP_PROVIDER);
   const kakaoResult =
     requestedProvider === 'open'
       ? { ok: false, skipped: true, reason: 'requested-open-provider' }
@@ -55,9 +55,9 @@ export async function createMapController(options = {}) {
   };
 }
 
-function resolveRequestedProvider(search) {
+function resolveRequestedProvider(search, envProvider = '') {
   const params = new URLSearchParams(search || '');
-  const value = (params.get('provider') || params.get('map') || '').trim().toLowerCase();
+  const value = (params.get('provider') || params.get('map') || envProvider || '').trim().toLowerCase();
   if (value === 'open' || value === 'osm' || value === 'openstreetmap') return 'open';
   if (value === 'kakao') return 'kakao';
   return 'auto';

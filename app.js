@@ -295,13 +295,13 @@ function showQRCode() {
     if (currentRoadAddress || currentPlaceName) {
         roadTxt.innerText = currentRoadAddress || currentPlaceName;
     } else {
-        roadTxt.innerText = "?? ??? ???? ?...";
+        roadTxt.innerText = "Loading address...";
         map.reverseGeocode(center.lat, center.lng)
             .then((detail) => {
-                roadTxt.innerText = detail?.roadAddress || detail?.jibunAddress || "?? ?? ??";
+                roadTxt.innerText = detail?.roadAddress || detail?.jibunAddress || "Address unavailable";
             })
             .catch(() => {
-                roadTxt.innerText = "?? ?? ??";
+                roadTxt.innerText = "Address unavailable";
             });
     }
 
@@ -679,11 +679,11 @@ function handleAutocomplete(keyword) {
                 setSearchExpanded(true);
                 updateSearchStatus(`Search results: ${Math.min(data.length, 5)}`);
             } else {
-                resultsDiv.innerHTML = '<div class="search-item-empty" role="presentation">?? ??? ????.</div>';
+                resultsDiv.innerHTML = '<div class="search-item-empty" role="presentation">No search results.</div>';
                 resultsDiv.style.display = 'block';
                 clearSearchSelection();
                 setSearchExpanded(true);
-                updateSearchStatus('?? ??? ????.');
+                updateSearchStatus('No search results.');
             }
 
             searchInput.setAttribute('aria-busy', 'false');
@@ -691,7 +691,7 @@ function handleAutocomplete(keyword) {
         }).catch((error) => {
             console.error('Autocomplete lookup failed:', error);
             hideSearchResults();
-            updateSearchStatus('?? ??? ???? ?????.');
+            updateSearchStatus('Could not load search results.');
             searchInput.setAttribute('aria-busy', 'false');
             if (searchBox) searchBox.classList.remove('is-loading');
         });
@@ -791,7 +791,7 @@ async function searchPlaces(keyword) {
     try {
         const data = await map.searchPlaces(keyword, { limit: 1 });
         if (data.length === 0) {
-            showToast("??? ?? ? ????.");
+            showToast("No place found.");
             return;
         }
 
@@ -800,10 +800,10 @@ async function searchPlaces(keyword) {
         currentRoadAddress = place.road_address_name || place.address_name;
         map.setCenter(Number(place.y), Number(place.x));
         map.setLevel(2);
-        showToast(`'${place.place_name}'(?)? ??????.`);
+        showToast(`Moved to '${place.place_name}'.`);
     } catch (error) {
         console.error('Place search failed:', error);
-        showToast("?? ???? ???? ?????.");
+        showToast("Place search failed.");
     }
 }
 
