@@ -7,6 +7,8 @@ const DEFAULT_LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.cs
 const DEFAULT_TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const DEFAULT_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const DEFAULT_NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
+const OPEN_GEOCODER_MODES = new Set(['auto', 'direct', 'proxy', 'fallback']);
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1']);
 
 export async function createMapController(options = {}) {
   const requestedProvider = resolveRequestedProvider(options.search || window.location.search, options.env?.VITE_MAP_PROVIDER);
@@ -30,10 +32,11 @@ export async function createMapController(options = {}) {
 
   const openResult = await tryCreateOpenStreetMapController(options);
   if (openResult.ok) {
-    const notice =
+    const baseNotice =
       requestedProvider === 'open'
         ? 'OpenStreetMap 공개 모드로 실행 중입니다.'
         : 'Kakao 없이 OpenStreetMap 공개 모드로 실행 중입니다.';
+    const notice = [baseNotice, openResult.geocoder?.notice].filter(Boolean).join(' ');
 
     return {
       ok: true,
@@ -44,6 +47,7 @@ export async function createMapController(options = {}) {
         mode: requestedProvider === 'open' ? 'requested' : 'fallback',
         fallbackReason: kakaoResult.reason || '',
         supportsAutocomplete: false,
+        geocoderMode: openResult.geocoder?.mode || 'direct',
         notice,
       },
     };
@@ -237,15 +241,67 @@ function createKakaoMapController() {
 async function tryCreateOpenStreetMapController(options) {
   try {
     await ensureLeafletLoaded(options);
-    return { ok: true, controller: createOpenStreetMapController(options) };
+    const geocoder = await resolveOpenGeocoderOptions(options);
+    return { ok: true, controller: createOpenStreetMapController({ ...options, openGeocoder: geocoder }), geocoder };
   } catch (error) {
     console.error('OpenStreetMap fallback failed:', error);
     return { ok: false, reason: 'open-map-load-failed' };
   }
 }
 
+async function resolveOpenGeocoderOptions(options = {}) {
+  const runtimeConfig = await loadRuntimeConfig({
+    windowConfig: options.windowConfig,
+    appBaseUrl: options.appBaseUrl,
+    runtimeConfigPaths: options.runtimeConfigPaths || DEFAULT_RUNTIME_CONFIG_PATHS,
+  });
+
+  const params = new URLSearchParams(options.search || window.location.search);
+  const searchMode = getTrimmedString(params.get('geocoder') || params.get('open_geocoder'));
+  const requestedMode = (searchMode || options.env?.VITE_OPEN_GEOCODER_MODE || options.windowConfig?.openGeocoderMode || runtimeConfig.openGeocoderMode || 'auto')
+    .trim()
+    .toLowerCase();
+  const normalizedMode = OPEN_GEOCODER_MODES.has(requestedMode) ? requestedMode : 'auto';
+  const baseUrl = getTrimmedString(
+    options.env?.VITE_OPEN_GEOCODER_BASE_URL ||
+      options.windowConfig?.openGeocoderBaseUrl ||
+      runtimeConfig.openGeocoderBaseUrl ||
+      DEFAULT_NOMINATIM_BASE_URL
+  ) || DEFAULT_NOMINATIM_BASE_URL;
+  const isLocalOrigin = window.location.protocol !== 'https:' || LOCAL_HOSTNAMES.has(window.location.hostname);
+  const isDefaultPublicBase = baseUrl === DEFAULT_NOMINATIM_BASE_URL;
+
+  const effectiveMode =
+    normalizedMode === 'auto'
+      ? isLocalOrigin && isDefaultPublicBase
+        ? 'fallback'
+        : 'direct'
+      : normalizedMode;
+
+  const notice =
+    effectiveMode === 'fallback'
+      ? '로컬 프리뷰에서는 공용 지오코더를 직접 호출하지 않고 좌표 안내로 대체합니다. 프록시를 설정하면 실제 검색을 다시 켤 수 있습니다.'
+      : effectiveMode === 'proxy'
+        ? '프록시 지오코더 경로를 사용 중입니다.'
+        : '';
+
+  return {
+    mode: effectiveMode,
+    baseUrl,
+    isLocalOrigin,
+    usesPublicNominatim: isDefaultPublicBase,
+    notice,
+  };
+}
+
 function createOpenStreetMapController(options = {}) {
   const leaflet = window.L;
+  const openGeocoder = options.openGeocoder || {
+    mode: 'direct',
+    baseUrl: options.nominatimBaseUrl || DEFAULT_NOMINATIM_BASE_URL,
+    usesPublicNominatim: true,
+    isLocalOrigin: false,
+  };
   const mapContainer = document.getElementById('map');
   const map = leaflet.map(mapContainer, {
     zoomControl: true,
@@ -313,22 +369,38 @@ function createOpenStreetMapController(options = {}) {
       });
     },
     async reverseGeocode(lat, lng) {
-      const url = new URL('/reverse', options.nominatimBaseUrl || DEFAULT_NOMINATIM_BASE_URL);
+      if (openGeocoder.mode === 'fallback') {
+        return buildLocalFallbackReverse(lat, lng);
+      }
+
+      const url = new URL('/reverse', openGeocoder.baseUrl || DEFAULT_NOMINATIM_BASE_URL);
       url.searchParams.set('format', 'jsonv2');
       url.searchParams.set('lat', String(lat));
       url.searchParams.set('lon', String(lng));
       url.searchParams.set('accept-language', document.documentElement.lang || 'ko');
       url.searchParams.set('addressdetails', '1');
 
-      const response = await fetch(url, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      return normalizeNominatimReverse(data);
+      try {
+        const response = await fetch(url, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) return buildLocalFallbackReverse(lat, lng);
+        const data = await response.json();
+        return normalizeNominatimReverse(data);
+      } catch (error) {
+        if (openGeocoder.isLocalOrigin && openGeocoder.usesPublicNominatim) {
+          console.warn('Open geocoder direct fetch failed on local origin, using coordinate fallback instead.', error);
+          return buildLocalFallbackReverse(lat, lng);
+        }
+        throw error;
+      }
     },
     async searchPlaces(keyword, { limit = 5 } = {}) {
-      const url = new URL('/search', options.nominatimBaseUrl || DEFAULT_NOMINATIM_BASE_URL);
+      if (openGeocoder.mode === 'fallback') {
+        return [];
+      }
+
+      const url = new URL('/search', openGeocoder.baseUrl || DEFAULT_NOMINATIM_BASE_URL);
       url.searchParams.set('format', 'jsonv2');
       url.searchParams.set('q', keyword);
       url.searchParams.set('limit', String(limit));
@@ -336,12 +408,20 @@ function createOpenStreetMapController(options = {}) {
       url.searchParams.set('accept-language', document.documentElement.lang || 'ko');
       url.searchParams.set('countrycodes', 'kr');
 
-      const response = await fetch(url, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) return [];
-      const data = await response.json();
-      return Array.isArray(data) ? data.map(normalizeNominatimPlace) : [];
+      try {
+        const response = await fetch(url, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return Array.isArray(data) ? data.map(normalizeNominatimPlace) : [];
+      } catch (error) {
+        if (openGeocoder.isLocalOrigin && openGeocoder.usesPublicNominatim) {
+          console.warn('Open search direct fetch failed on local origin. Configure a proxy to enable search locally.', error);
+          return [];
+        }
+        throw error;
+      }
     },
     setHighlightBounds(sw, ne) {
       if (highlightRect) highlightRect.remove();
@@ -401,6 +481,18 @@ function normalizeNominatimReverse(item) {
     roadAddress: buildDisplayAddress(address, item.display_name),
     jibunAddress: item.display_name || '',
     buildingName: [address.amenity, address.building, address.tourism, address.shop, address.office].find(Boolean) || '',
+  };
+}
+
+function buildLocalFallbackReverse(lat, lng) {
+  const normalizedLat = Number(lat);
+  const normalizedLng = Number(lng);
+  const formatted = `${normalizedLat.toFixed(4)},${normalizedLng.toFixed(4)}`;
+
+  return {
+    roadAddress: `좌표 ${formatted}`,
+    jibunAddress: formatted,
+    buildingName: '',
   };
 }
 
@@ -541,8 +633,16 @@ async function resolveKakaoJsKey({ env = {}, windowConfig = {}, appBaseUrl = '/'
 
 async function loadRuntimeConfig({ windowConfig = {}, appBaseUrl = '/', runtimeConfigPaths = DEFAULT_RUNTIME_CONFIG_PATHS }) {
   const windowKey = getTrimmedString(windowConfig.kakaoJsKey);
-  if (windowKey) {
-    return { kakaoJsKey: windowKey, source: 'window-config' };
+  const windowOpenGeocoderBaseUrl = getTrimmedString(windowConfig.openGeocoderBaseUrl);
+  const windowOpenGeocoderMode = getTrimmedString(windowConfig.openGeocoderMode);
+  if (windowKey || windowOpenGeocoderBaseUrl || windowOpenGeocoderMode) {
+    return {
+      ...windowConfig,
+      kakaoJsKey: windowKey,
+      openGeocoderBaseUrl: windowOpenGeocoderBaseUrl,
+      openGeocoderMode: windowOpenGeocoderMode,
+      source: 'window-config',
+    };
   }
 
   for (const configPath of runtimeConfigPaths) {
@@ -553,8 +653,16 @@ async function loadRuntimeConfig({ windowConfig = {}, appBaseUrl = '/', runtimeC
 
       const config = await response.json();
       const kakaoJsKey = getTrimmedString(config.kakaoJsKey);
-      if (kakaoJsKey) {
-        return { kakaoJsKey, source: configPath };
+      const openGeocoderBaseUrl = getTrimmedString(config.openGeocoderBaseUrl);
+      const openGeocoderMode = getTrimmedString(config.openGeocoderMode);
+      if (kakaoJsKey || openGeocoderBaseUrl || openGeocoderMode) {
+        return {
+          ...config,
+          kakaoJsKey,
+          openGeocoderBaseUrl,
+          openGeocoderMode,
+          source: configPath,
+        };
       }
     } catch (error) {
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -563,7 +671,12 @@ async function loadRuntimeConfig({ windowConfig = {}, appBaseUrl = '/', runtimeC
     }
   }
 
-  return { kakaoJsKey: '', source: 'none' };
+  return {
+    kakaoJsKey: '',
+    openGeocoderBaseUrl: '',
+    openGeocoderMode: '',
+    source: 'none',
+  };
 }
 
 function getKakaoSdkUrl(kakaoJsKey) {

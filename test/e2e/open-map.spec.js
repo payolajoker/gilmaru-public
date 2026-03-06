@@ -54,7 +54,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('loads the OpenStreetMap fallback when requested', async ({ page }) => {
-  await page.goto('?provider=open');
+  await page.goto('?provider=open&geocoder=direct');
 
   await expect(page.locator('#address-text')).not.toContainText('로딩중');
   await expect(page.locator('#road-address')).toContainText('Open Road 1');
@@ -62,7 +62,7 @@ test('loads the OpenStreetMap fallback when requested', async ({ page }) => {
 });
 
 test('searches a place in OpenStreetMap mode on submit', async ({ page }) => {
-  await page.goto('?provider=open');
+  await page.goto('?provider=open&geocoder=direct');
 
   await page.fill('#search-input', 'open test park');
   await page.press('#search-input', 'Enter');
@@ -76,9 +76,20 @@ test('uses a stored open provider preference without a query parameter', async (
     window.localStorage.setItem('gilmaru.mapProviderPreference', 'open');
   });
 
-  await page.goto('/');
+  await page.goto('/?geocoder=direct');
 
   await expect(page.locator('body')).toHaveAttribute('data-map-provider', 'openstreetmap');
   await expect(page.locator('#provider-status-text')).toContainText('OpenStreetMap');
   await expect(page.locator('#btn-provider-open')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('falls back to coordinate labels on local preview when direct geocoding is disabled', async ({ page }) => {
+  await page.goto('?provider=open&geocoder=fallback');
+
+  await expect(page.locator('#provider-status-text')).toContainText('로컬 좌표 안내');
+  await expect(page.locator('#road-address')).toContainText('좌표 37.4979,127.0276');
+
+  await page.fill('#search-input', 'open test park');
+  await page.press('#search-input', 'Enter');
+  await expect(page.locator('#toast')).toContainText('로컬 공개 모드에서는 장소 검색이 제한됩니다');
 });

@@ -135,7 +135,12 @@ function updateProviderStatus() {
             providerStatusEl.textContent = '지도 공급자를 준비 중입니다.';
         } else {
             const modeLabel = providerPreference === 'auto' ? '자동 선택' : '직접 선택';
-            providerStatusEl.textContent = `현재 지도: ${mapProviderInfo.label} · ${modeLabel}`;
+            const geocoderLabel = mapProviderInfo.geocoderMode === 'fallback'
+                ? ' · 로컬 좌표 안내'
+                : mapProviderInfo.geocoderMode === 'proxy'
+                    ? ' · 프록시 지오코더'
+                    : '';
+            providerStatusEl.textContent = `현재 지도: ${mapProviderInfo.label} · ${modeLabel}${geocoderLabel}`;
         }
     }
 
@@ -144,7 +149,7 @@ function updateProviderStatus() {
     const suffix = mapProviderInfo.id === 'openstreetmap'
         ? ' · OpenStreetMap public mode'
         : '';
-    versionEl.textContent = `Gilmaru v1.7.10${suffix}`;
+    versionEl.textContent = `Gilmaru v1.7.11${suffix}`;
 }
 
 function safeStorageGet(key) {
@@ -1533,6 +1538,10 @@ async function searchPlaces(keyword) {
     try {
         const data = await map.searchPlaces(keyword, { limit: 1 });
         if (data.length === 0) {
+            if (mapProviderInfo?.id === 'openstreetmap' && mapProviderInfo?.geocoderMode === 'fallback') {
+                showToast('로컬 공개 모드에서는 장소 검색이 제한됩니다. 프록시를 설정하거나 배포 URL에서 확인하세요.');
+                return;
+            }
             showToast("No place found.");
             return;
         }

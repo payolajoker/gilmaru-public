@@ -1,3 +1,5 @@
 {
-  "kakaoJsKey": "your_kakao_javascript_key"
+  "kakaoJsKey": "your_kakao_javascript_key",
+  "openGeocoderMode": "proxy",
+  "openGeocoderBaseUrl": "http://localhost:8787/nominatim"
 }

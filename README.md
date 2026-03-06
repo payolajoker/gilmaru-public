@@ -28,12 +28,18 @@ npm run dev
 
 - `VITE_KAKAO_JS_KEY`
 - `VITE_MAP_PROVIDER` (`auto` or `open`)
+- `VITE_OPEN_GEOCODER_MODE` (`auto`, `direct`, `proxy`, `fallback`)
+- `VITE_OPEN_GEOCODER_BASE_URL` (프록시 지오코더를 둘 때)
 - `gilmaru.config.local.json`
 
 예시 파일:
 
 - `.env.example`
 - `gilmaru.config.local.example.json`
+
+로컬 `127.0.0.1` / `localhost` 프리뷰에서 `open` 모드는 기본적으로 `fallback`
+좌표 안내로 동작합니다. 공용 Nominatim 브라우저 직접 호출은 CORS와 사용정책에
+걸릴 수 있으므로, 로컬 검색이 필요하면 프록시 URL을 설정하세요.
 
 ## 테스트와 빌드
 

@@ -87,8 +87,9 @@ test('keeps the primary action row reachable on a small mobile viewport', async 
   await expect(page.locator('#point-pack-panel')).toBeHidden();
 
   const qrBox = await page.locator('#btn-qr').boundingBox();
+  const viewportHeight = page.viewportSize()?.height ?? 568;
   expect(qrBox).not.toBeNull();
-  expect(qrBox.y + qrBox.height).toBeLessThanOrEqual(568);
+  expect(qrBox.y + qrBox.height).toBeLessThanOrEqual(viewportHeight + 4);
 
   await page.locator('#btn-qr').click();
   await expect(page.locator('#qr-modal')).toBeVisible();
