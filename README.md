@@ -34,6 +34,7 @@ npm run dev
 ## 테스트와 빌드
 
 ```bash
+npm run validate:data
 npm run test -- --run
 npm run test:e2e
 npm run build
@@ -61,6 +62,15 @@ npm run build
 - [권리관계 표](./docs/rights-inventory.md)
 - [커뮤니티 로드맵](./docs/community-roadmap.md)
 - [공개 구조 메모](./docs/public-release-structure.md)
+- [포인트 팩 기여 가이드](./docs/data-contribution-guide.md)
+- [포인트 팩 스키마](./docs/point-pack-spec.md)
+
+## 커뮤니티 운영
+
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [GOVERNANCE.md](./GOVERNANCE.md)
+- [SECURITY.md](./SECURITY.md)
+- [SUPPORT.md](./SUPPORT.md)
 
 ## 주의
 

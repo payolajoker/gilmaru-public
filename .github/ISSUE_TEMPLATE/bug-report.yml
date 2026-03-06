@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a regression, runtime bug, or deployment issue.
+title: "[bug] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Include concrete reproduction steps and say
+        whether the problem happens in Kakao mode, open-map mode, or both.
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Map provider
+      options:
+        - auto
+        - kakao
+        - open
+        - unknown
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Page URL
+      placeholder: https://payolajoker.github.io/gilmaru-public/
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser / device
+      placeholder: Chrome 134 / Android 14
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Console errors or screenshots
+      description: Paste short logs or attach images if available.

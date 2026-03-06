@@ -1,0 +1,47 @@
+name: Data pack proposal
+description: Propose a new community point pack or a schema/data validation change.
+title: "[data-pack] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Point packs should be reviewable, sourced, and valid against the public
+        schema.
+  - type: input
+    id: pack_id
+    attributes:
+      label: Proposed pack ID
+      placeholder: seoul-cityhall-access-pack
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Pack scope
+      placeholder: Region, venue, event, or community focus
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Data source and provenance
+      placeholder: Where the coordinates and metadata came from
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification method
+      placeholder: Field survey, official facility guide, organizer confirmation, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation output
+      placeholder: Paste the result of `npm run validate:data -- <path>`
+  - type: textarea
+    id: notes
+    attributes:
+      label: Extra notes

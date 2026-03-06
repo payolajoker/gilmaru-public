@@ -10,7 +10,8 @@
     "build:raw": "vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "validate:data": "node scripts/validate-point-pack.mjs"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Support Guide
+    url: https://github.com/payolajoker/gilmaru-public/blob/main/SUPPORT.md
+    about: Start here for usage questions and debugging checklists.
+  - name: Point Pack Spec
+    url: https://github.com/payolajoker/gilmaru-public/blob/main/docs/point-pack-spec.md
+    about: Read the public point-pack format before proposing schema changes.

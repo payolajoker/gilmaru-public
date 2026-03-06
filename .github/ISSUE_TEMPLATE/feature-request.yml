@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a new capability, workflow, or accessibility improvement.
+title: "[feature] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please explain the user problem first. Public-interest and accessibility
+        impact matters more than feature volume.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      placeholder: Who is blocked today, and what fails for them?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      placeholder: Describe the smallest useful version first.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: impact
+    attributes:
+      label: Public-interest impact
+      placeholder: Accessibility, reuse, self-hosting, local community value, etc.

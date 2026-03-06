@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "1.0.0",
+  "packId": "seoul-cityhall-access-pack",
+  "name": "Seoul City Hall Access Pack",
+  "summary": "Example public-interest pack for a civic site with accessibility and meeting-point metadata.",
+  "language": "ko-KR",
+  "license": "ODbL-1.0",
+  "homepage": "https://payolajoker.github.io/gilmaru-public/",
+  "region": {
+    "country": "KR",
+    "province": "Seoul",
+    "city": "Seoul",
+    "district": "Jung-gu"
+  },
+  "maintainers": [
+    {
+      "name": "Gilmaru community",
+      "url": "https://github.com/payolajoker/gilmaru-public"
+    }
+  ],
+  "sources": [
+    {
+      "name": "Public site survey sample",
+      "type": "field-survey",
+      "checkedAt": "2026-03-07"
+    }
+  ],
+  "points": [
+    {
+      "id": "cityhall-main-entrance",
+      "type": "entrance",
+      "name": "Main entrance",
+      "description": "Primary public entrance facing the plaza.",
+      "gilmaruCode": "A001.B001.C001.D001",
+      "coordinates": {
+        "lat": 37.5662952,
+        "lng": 126.9779451
+      },
+      "status": "verified",
+      "verifiedAt": "2026-03-07",
+      "lastUpdated": "2026-03-07T09:00:00Z",
+      "tags": [
+        "public-building",
+        "plaza"
+      ],
+      "links": [
+        {
+          "label": "Project home",
+          "url": "https://payolajoker.github.io/gilmaru-public/"
+        }
+      ],
+      "accessibility": {
+        "stepFree": true,
+        "doorWidthCm": 180,
+        "notes": "Automatic door with wide approach."
+      }
+    },
+    {
+      "id": "cityhall-accessible-restroom-b1",
+      "type": "accessible_restroom",
+      "name": "Accessible restroom B1",
+      "description": "Basement-level accessible restroom near the public lobby.",
+      "gilmaruCode": "A002.B004.C004.D001",
+      "coordinates": {
+        "lat": 37.56591,
+        "lng": 126.97775
+      },
+      "status": "reported",
+      "lastUpdated": "2026-03-07T09:10:00Z",
+      "tags": [
+        "restroom",
+        "basement"
+      ],
+      "accessibility": {
+        "stepFree": true,
+        "notes": "Community-reported. Confirmation pending."
+      }
+    },
+    {
+      "id": "cityhall-meeting-point-plaza",
+      "type": "meeting_point",
+      "name": "Plaza meeting point",
+      "description": "Open-air meetup spot for tours and public events.",
+      "gilmaruCode": "A003.B004.C004.D001",
+      "coordinates": {
+        "lat": 37.56652,
+        "lng": 126.97761
+      },
+      "status": "temporary",
+      "lastUpdated": "2026-03-07T09:20:00Z",
+      "tags": [
+        "event",
+        "meeting"
+      ]
+    }
+  ]
+}
