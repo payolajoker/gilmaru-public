@@ -10,6 +10,7 @@ export default defineConfig({
   projects: [
     {
       name: 'built-dist',
+      testIgnore: ['**/open-map.spec.js', '**/open-fallback.spec.js'],
       use: {
         baseURL: 'http://127.0.0.1:4173/gilmaru-public/',
         headless: true,
@@ -18,6 +19,16 @@ export default defineConfig({
     },
     {
       name: 'raw-root',
+      testIgnore: ['**/open-map.spec.js', '**/open-fallback.spec.js'],
+      use: {
+        baseURL: 'http://127.0.0.1:4174/',
+        headless: true,
+        serviceWorkers: 'block',
+      },
+    },
+    {
+      name: 'open-fallback',
+      testMatch: '**/open-map.spec.js',
       use: {
         baseURL: 'http://127.0.0.1:4174/',
         headless: true,

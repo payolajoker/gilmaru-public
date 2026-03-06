@@ -1,14 +1,16 @@
 import { wordA, wordB, wordC, wordD } from './word_data.js';
 import { latLngToGilmaru, getWordsFromCode, generateSentence, fullAddress } from './gilmaru_core.js';
+import { createMapController } from './map-provider.js';
 
 let map;
 let canvas, ctx;
-let geocoder;
 let currentPlaceName = null;
 let currentRoadAddress = null;
 let activeModal = null;
 let lastFocusedElement = null;
 let searchActiveIndex = -1;
+let mapProviderInfo = null;
+let detailRequestToken = 0;
 
 const FOCUSABLE_SELECTOR = [
     'button:not([disabled])',
@@ -27,8 +29,6 @@ const ENV = import.meta.env || {};
 const WINDOW_CONFIG = window.__GILMARU_CONFIG__ || {};
 const APP_BASE_URL = ENV.BASE_URL || new URL('./', window.location.href).pathname;
 const RUNTIME_CONFIG_PATHS = ['gilmaru.config.local.json', 'gilmaru.config.json'];
-const KAKAO_SDK_MAX_RETRIES = 1;
-const KAKAO_SDK_TIMEOUT_MS = 10000;
 const SERVICE_WORKER_URL = new URL('sw.js', new URL(APP_BASE_URL, window.location.origin));
 const GILMARU_GROUPS = ['A', 'B', 'C', 'D'];
 const GILMARU_WORD_GROUPS = {
@@ -48,13 +48,25 @@ const GILMARU_WORD_LOOKUPS = Object.fromEntries(
 document.addEventListener('DOMContentLoaded', async () => {
     initCanvas();
 
-    const sdkResult = await loadKakaoMapSdk();
-    if (!sdkResult.ok) {
-        handleMapLoadFailure(sdkResult.reason);
+    const mapResult = await createMapController({
+        env: ENV,
+        windowConfig: WINDOW_CONFIG,
+        appBaseUrl: APP_BASE_URL,
+        runtimeConfigPaths: RUNTIME_CONFIG_PATHS,
+        defaultKakaoJsKey: DEFAULT_KAKAO_JS_KEY,
+        defaultKakaoKeyHosts: DEFAULT_KAKAO_KEY_HOSTS
+    });
+
+    if (!mapResult.ok) {
+        handleMapLoadFailure(mapResult.reason);
         return;
     }
-    if (sdkResult.keySource === 'fallback') {
-        console.info('Using bundled Kakao JS key fallback. Set VITE_KAKAO_JS_KEY to override it per environment.');
+
+    map = mapResult.controller;
+    mapProviderInfo = mapResult.providerInfo;
+    updateProviderStatus();
+    if (mapProviderInfo?.notice) {
+        console.info(mapProviderInfo.notice);
     }
 
     initMap();
@@ -62,146 +74,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(initDeepLink, 1000); // Small delay to ensure map is ready
 });
 
-async function loadKakaoMapSdk() {
-    if (window.kakao?.maps?.services) return { ok: true, keySource: 'preloaded' };
+function updateProviderStatus() {
+    document.body.dataset.mapProvider = mapProviderInfo?.id || 'unknown';
+    const versionEl = document.getElementById('app-version');
+    if (!versionEl || !mapProviderInfo) return;
 
-    const keyResolution = await resolveKakaoJsKey();
-    if (!keyResolution.key) {
-        return { ok: false, reason: keyResolution.reason };
-    }
-
-    for (let attempt = 0; attempt <= KAKAO_SDK_MAX_RETRIES; attempt += 1) {
-        try {
-            ensureKakaoScriptTag(getKakaoSdkUrl(keyResolution.key));
-            await waitForKakaoScriptLoad();
-            await waitForKakaoMapsLoad();
-            return { ok: Boolean(window.kakao?.maps?.services), keySource: keyResolution.source };
-        } catch (error) {
-            console.error(`Kakao SDK load failed (attempt ${attempt + 1}):`, error);
-            const staleScript = document.querySelector('script[data-kakao-sdk="true"]');
-            if (staleScript) staleScript.remove();
-            if (attempt === KAKAO_SDK_MAX_RETRIES) return { ok: false, reason: 'sdk-load-failed' };
-            await waitForMs(700);
-        }
-    }
-    return { ok: false, reason: 'sdk-load-failed' };
-}
-
-function getTrimmedString(value) {
-    return typeof value === 'string' ? value.trim() : '';
-}
-
-async function resolveKakaoJsKey() {
-    const envKey = getTrimmedString(ENV.VITE_KAKAO_JS_KEY);
-    if (envKey) {
-        return { key: envKey, source: 'vite-env' };
-    }
-
-    const runtimeConfig = await loadRuntimeConfig();
-    const runtimeKey = getTrimmedString(runtimeConfig.kakaoJsKey);
-    if (runtimeKey) {
-        return { key: runtimeKey, source: runtimeConfig.source || 'runtime-config' };
-    }
-
-    if (DEFAULT_KAKAO_KEY_HOSTS.has(window.location.hostname)) {
-        return { key: DEFAULT_KAKAO_JS_KEY, source: 'fallback' };
-    }
-
-    return { key: '', source: 'none', reason: 'missing-kakao-key' };
-}
-
-async function loadRuntimeConfig() {
-    const windowKey = getTrimmedString(WINDOW_CONFIG.kakaoJsKey);
-    if (windowKey) {
-        return { kakaoJsKey: windowKey, source: 'window-config' };
-    }
-
-    for (const configPath of RUNTIME_CONFIG_PATHS) {
-        const configUrl = new URL(configPath, new URL(APP_BASE_URL, window.location.origin));
-        try {
-            const response = await fetch(configUrl, { cache: 'no-store' });
-            if (response.status === 404) continue;
-            if (!response.ok) continue;
-
-            const config = await response.json();
-            const kakaoJsKey = getTrimmedString(config.kakaoJsKey);
-            if (kakaoJsKey) {
-                return { kakaoJsKey, source: configPath };
-            }
-        } catch (error) {
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.warn(`Failed to load runtime config from ${configPath}:`, error);
-            }
-        }
-    }
-
-    return { kakaoJsKey: '', source: 'none' };
-}
-
-function getKakaoSdkUrl(kakaoJsKey) {
-    return `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoJsKey)}&libraries=services&autoload=false`;
-}
-
-function ensureKakaoScriptTag(src) {
-    const existingScript = document.querySelector('script[data-kakao-sdk="true"]');
-    if (existingScript) {
-        if (existingScript.src === src) return;
-        existingScript.remove();
-    }
-
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    script.defer = true;
-    script.dataset.kakaoSdk = 'true';
-    document.head.appendChild(script);
-}
-
-function waitForKakaoScriptLoad() {
-    if (window.kakao?.maps?.load) return Promise.resolve();
-
-    const scriptEl = document.querySelector('script[data-kakao-sdk="true"]');
-    if (!scriptEl) return Promise.reject(new Error('Kakao SDK script element not found'));
-
-    return new Promise((resolve, reject) => {
-        const timer = window.setTimeout(() => {
-            cleanup();
-            reject(new Error('Kakao SDK load timeout'));
-        }, KAKAO_SDK_TIMEOUT_MS);
-
-        const onLoad = () => {
-            cleanup();
-            resolve();
-        };
-
-        const onError = () => {
-            cleanup();
-            reject(new Error('Kakao SDK failed to load'));
-        };
-
-        const cleanup = () => {
-            window.clearTimeout(timer);
-            scriptEl.removeEventListener('load', onLoad);
-            scriptEl.removeEventListener('error', onError);
-        };
-
-        scriptEl.addEventListener('load', onLoad, { once: true });
-        scriptEl.addEventListener('error', onError, { once: true });
-    });
-}
-
-function waitForKakaoMapsLoad() {
-    return new Promise((resolve, reject) => {
-        if (!window.kakao?.maps?.load) {
-            reject(new Error('Kakao maps loader unavailable'));
-            return;
-        }
-        window.kakao.maps.load(resolve);
-    });
-}
-
-function waitForMs(ms) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms));
+    const suffix = mapProviderInfo.id === 'openstreetmap'
+        ? ' · OpenStreetMap public mode'
+        : '';
+    versionEl.textContent = `Gilmaru v1.7.7${suffix}`;
 }
 
 function handleMapLoadFailure(reason = 'sdk-load-failed') {
@@ -255,23 +136,12 @@ if ('serviceWorker' in navigator) {
 }
 
 function initMap() {
-    const mapContainer = document.getElementById('map');
-    const mapOption = {
-        center: new kakao.maps.LatLng(37.4979, 127.0276), // Gangnam Station
-        level: 3 // Start a bit closer
-    };
-    map = new kakao.maps.Map(mapContainer, mapOption);
-
-    // Init Geocoder
-    geocoder = new kakao.maps.services.Geocoder();
-    placesService = new kakao.maps.services.Places();
-
     // Initial Updates
     resizeCanvasToMap();
     updateCenterAddress();
 
     // Map Events
-    kakao.maps.event.addListener(map, 'idle', () => {
+    map.onIdle(() => {
         try {
             updateCenterAddress();
             updateZoomDisplay();
@@ -281,10 +151,13 @@ function initMap() {
     });
 
     // Reset place name and address on manual move
-    kakao.maps.event.addListener(map, 'dragstart', () => {
+    map.onDragStart(() => {
         currentPlaceName = null;
         currentRoadAddress = null;
     });
+    if (mapProviderInfo?.notice) {
+        showToast(mapProviderInfo.notice);
+    }
     updateZoomDisplay();
 }
 
@@ -412,42 +285,30 @@ function initEventListeners() {
 function showQRCode() {
     const qrModal = document.getElementById('qr-modal');
     const center = map.getCenter();
-    const gilmaru = latLngToGilmaru(center.getLat(), center.getLng(), 1); // Force precision level 1
+    const gilmaru = latLngToGilmaru(center.lat, center.lng, 1); // Force precision level 1
 
-    // Updates
     const words = getWordsFromCode(gilmaru.code);
-
-    // HTML with Highlight
     const highlightedWords = words.map(w => `<span class="highlight-word">${w}</span>`).join(" ");
     document.getElementById('qr-gilmaru-text').innerHTML = highlightedWords;
 
-    // Road Address Logic
     const roadTxt = document.getElementById('qr-road-address-text');
-
-    // 1. Try existing data
     if (currentRoadAddress || currentPlaceName) {
         roadTxt.innerText = currentRoadAddress || currentPlaceName;
     } else {
-        // 2. Fetch if missing
-        roadTxt.innerText = "주소 정보를 불러오는 중...";
-        geocoder.coord2Address(center.getLng(), center.getLat(), (result, status) => {
-            if (status === kakao.maps.services.Status.OK) {
-                const detail = result[0];
-                const addr = (detail.road_address ? detail.road_address.address_name : "") ||
-                    (detail.address ? detail.address.address_name : "주소 정보 없음");
-                roadTxt.innerText = addr;
-            } else {
-                roadTxt.innerText = "주소 정보 없음";
-            }
-        });
+        roadTxt.innerText = "?? ??? ???? ?...";
+        map.reverseGeocode(center.lat, center.lng)
+            .then((detail) => {
+                roadTxt.innerText = detail?.roadAddress || detail?.jibunAddress || "?? ?? ??";
+            })
+            .catch(() => {
+                roadTxt.innerText = "?? ?? ??";
+            });
     }
 
-    // URL to share
     const link = `${window.location.origin}${window.location.pathname}?code=${gilmaru.code}`;
 
-    // Generate QR
     const qrContainer = document.getElementById('qr-code-display');
-    qrContainer.innerHTML = ""; // Clear prev
+    qrContainer.innerHTML = "";
     new QRCode(qrContainer, {
         text: link,
         width: 140,
@@ -546,19 +407,18 @@ function drawCanvasGrid() {
     if (level > 5) return;
 
     const bounds = map.getBounds();
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-    const projection = map.getProjection();
+    const sw = bounds.sw;
+    const ne = bounds.ne;
 
     const originLat = 33.0;
     const originLng = 124.6;
     const subBlockSize = 0.0001;
 
     // Optimization: Only draw lines within view
-    const startX = Math.floor((sw.getLng() - originLng) / subBlockSize);
-    const endX = Math.floor((ne.getLng() - originLng) / subBlockSize);
-    const startY = Math.floor((sw.getLat() - originLat) / subBlockSize);
-    const endY = Math.floor((ne.getLat() - originLat) / subBlockSize);
+    const startX = Math.floor((sw.lng - originLng) / subBlockSize);
+    const endX = Math.floor((ne.lng - originLng) / subBlockSize);
+    const startY = Math.floor((sw.lat - originLat) / subBlockSize);
+    const endY = Math.floor((ne.lat - originLat) / subBlockSize);
 
     // Limit calculation to avoid freezing if zoomed out too much (safety check)
     if ((endX - startX) * (endY - startY) > 5000) return;
@@ -570,8 +430,8 @@ function drawCanvasGrid() {
     // Vertical lines
     for (let x = startX; x <= endX; x++) {
         const lng = originLng + x * subBlockSize;
-        const p1 = projection.containerPointFromCoords(new kakao.maps.LatLng(sw.getLat(), lng));
-        const p2 = projection.containerPointFromCoords(new kakao.maps.LatLng(ne.getLat(), lng));
+        const p1 = map.project(sw.lat, lng);
+        const p2 = map.project(ne.lat, lng);
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
     }
@@ -579,8 +439,8 @@ function drawCanvasGrid() {
     // Horizontal lines
     for (let y = startY; y <= endY; y++) {
         const lat = originLat + y * subBlockSize;
-        const p1 = projection.containerPointFromCoords(new kakao.maps.LatLng(lat, sw.getLng()));
-        const p2 = projection.containerPointFromCoords(new kakao.maps.LatLng(lat, ne.getLng()));
+        const p1 = map.project(lat, sw.lng);
+        const p2 = map.project(lat, ne.lng);
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
     }
@@ -592,7 +452,7 @@ function updateCenterAddress() {
     try {
         const center = map.getCenter();
         const level = map.getLevel();
-        const gilmaru = latLngToGilmaru(center.getLat(), center.getLng(), level);
+        const gilmaru = latLngToGilmaru(center.lat, center.lng, level);
 
         // 1. Gilmaru Address
         const addressText = fullAddress(gilmaru.code);
@@ -615,9 +475,9 @@ function updateCenterAddress() {
         }
 
         // 2. Real Address & Place Name (Reverse Geocoding)
-        updateDetailAddress(center.getLat(), center.getLng());
+        updateDetailAddress(center.lat, center.lng);
 
-        drawHighlightGrid(center.getLat(), center.getLng());
+        drawHighlightGrid(center.lat, center.lng);
         drawCanvasGrid(); // Redraw grid on move
 
         // 3. Update Browser URL (Deep Link Sync)
@@ -633,6 +493,7 @@ function updateCenterAddress() {
 function updateDetailAddress(lat, lng) {
     const placeEl = document.getElementById('place-name');
     const roadEl = document.getElementById('road-address');
+    const requestToken = ++detailRequestToken;
 
     // If we have a searched road address, use it directly (Priority 1)
     if (currentRoadAddress) {
@@ -640,46 +501,40 @@ function updateDetailAddress(lat, lng) {
         if (currentPlaceName) {
             placeEl.textContent = currentPlaceName;
             placeEl.style.display = "block";
+        } else {
+            placeEl.style.display = "none";
         }
         return; // Skip reverse geocoding to avoid overwriting with less accurate data
     }
 
-    geocoder.coord2Address(lng, lat, (result, status) => {
-        if (status === kakao.maps.services.Status.OK) {
-            const detail = result[0];
-            const roadAddr = detail.road_address ? detail.road_address.address_name : "";
-            const jibunAddr = detail.address ? detail.address.address_name : "";
-            const buildingName = detail.road_address && detail.road_address.building_name ? detail.road_address.building_name : "";
+    map.reverseGeocode(lat, lng).then((detail) => {
+        if (requestToken !== detailRequestToken || currentRoadAddress) return;
 
-            // Display Address (Priority: Road > Jibun)
-            // User requested Road Address strongly.
-            const displayAddr = roadAddr || jibunAddr;
-            roadEl.textContent = displayAddr;
-
-            // Display Place Name priorities:
-            // 1. Searched Place Name (currentPlaceName)
-            // 2. Building Name from Geocoder
-            // 3. Region Name (if no building) - Optional, maybe too generic.
-
-            let displayPlace = currentPlaceName || buildingName;
-
-            if (displayPlace) {
-                placeEl.textContent = displayPlace;
-                placeEl.style.display = "block";
-            } else {
-                placeEl.style.display = "none";
-            }
-        } else {
+        if (!detail) {
             roadEl.textContent = "";
             placeEl.style.display = "none";
+            return;
         }
+
+        const displayAddr = detail.roadAddress || detail.jibunAddress || "";
+        roadEl.textContent = displayAddr;
+
+        const displayPlace = currentPlaceName || detail.buildingName;
+        if (displayPlace) {
+            placeEl.textContent = displayPlace;
+            placeEl.style.display = "block";
+        } else {
+            placeEl.style.display = "none";
+        }
+    }).catch(() => {
+        if (requestToken !== detailRequestToken || currentRoadAddress) return;
+        roadEl.textContent = "";
+        placeEl.style.display = "none";
     });
 }
 
 /* Highlight current 10m box */
 function drawHighlightGrid(lat, lng) {
-    if (window.highlightRect) window.highlightRect.setMap(null);
-
     const originLon = 124.6;
     const originLat = 33.0;
     const gridSize = 0.0001; // 10m
@@ -687,18 +542,10 @@ function drawHighlightGrid(lat, lng) {
     const x = Math.floor((lng - originLon) / gridSize);
     const y = Math.floor((lat - originLat) / gridSize);
 
-    const swLatLng = new kakao.maps.LatLng(originLat + y * gridSize, originLon + x * gridSize);
-    const neLatLng = new kakao.maps.LatLng(originLat + (y + 1) * gridSize, originLon + (x + 1) * gridSize);
-
-    window.highlightRect = new kakao.maps.Rectangle({
-        bounds: new kakao.maps.LatLngBounds(swLatLng, neLatLng),
-        strokeWeight: 2,
-        strokeColor: '#3B82F6',
-        strokeOpacity: 0.8,
-        fillColor: '#3B82F6',
-        fillOpacity: 0.3
-    });
-    window.highlightRect.setMap(map);
+    map.setHighlightBounds(
+        { lat: originLat + y * gridSize, lng: originLon + x * gridSize },
+        { lat: originLat + (y + 1) * gridSize, lng: originLon + (x + 1) * gridSize }
+    );
 }
 
 function updateZoomDisplay() {
@@ -722,7 +569,10 @@ function handleSearch() {
 }
 
 function shouldAutocompleteQuery(keyword) {
-    return keyword.length > 1 && !keyword.includes('.') && !parseGilmaruAddress(keyword);
+    return Boolean(map?.supportsAutocomplete) &&
+        keyword.length > 1 &&
+        !keyword.includes('.') &&
+        !parseGilmaruAddress(keyword);
 }
 
 function parseGilmaruAddress(address) {
@@ -785,10 +635,9 @@ function findGilmaruWordGroup(token) {
 
 // Autocomplete Logic
 let debounceTimer;
-let placesService;
 
 function handleAutocomplete(keyword) {
-    if (!placesService) return;
+    if (!map?.supportsAutocomplete) return;
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
         const searchInput = document.getElementById('search-input');
@@ -796,12 +645,12 @@ function handleAutocomplete(keyword) {
         searchInput.setAttribute('aria-busy', 'true');
         if (searchBox) searchBox.classList.add('is-loading');
 
-        placesService.keywordSearch(keyword, (data, status) => {
+        map.searchPlaces(keyword, { limit: 5 }).then((data) => {
             const resultsDiv = document.getElementById('search-results');
 
-            if (status === kakao.maps.services.Status.OK && data.length > 0) {
+            if (data.length > 0) {
                 resultsDiv.innerHTML = '';
-                data.slice(0, 5).forEach((place, index) => {
+                data.forEach((place, index) => {
                     const addr = place.road_address_name || place.address_name;
                     const item = document.createElement('div');
                     item.className = 'search-item';
@@ -828,18 +677,21 @@ function handleAutocomplete(keyword) {
                 resultsDiv.style.display = 'block';
                 clearSearchSelection();
                 setSearchExpanded(true);
-                updateSearchStatus(`검색 결과 ${Math.min(data.length, 5)}건`);
-            } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-                resultsDiv.innerHTML = '<div class="search-item-empty" role="presentation">검색 결과가 없습니다.</div>';
+                updateSearchStatus(`Search results: ${Math.min(data.length, 5)}`);
+            } else {
+                resultsDiv.innerHTML = '<div class="search-item-empty" role="presentation">?? ??? ????.</div>';
                 resultsDiv.style.display = 'block';
                 clearSearchSelection();
                 setSearchExpanded(true);
-                updateSearchStatus('검색 결과가 없습니다.');
-            } else {
-                hideSearchResults();
-                updateSearchStatus('검색 결과를 불러오지 못했습니다.');
+                updateSearchStatus('?? ??? ????.');
             }
 
+            searchInput.setAttribute('aria-busy', 'false');
+            if (searchBox) searchBox.classList.remove('is-loading');
+        }).catch((error) => {
+            console.error('Autocomplete lookup failed:', error);
+            hideSearchResults();
+            updateSearchStatus('?? ??? ???? ?????.');
             searchInput.setAttribute('aria-busy', 'false');
             if (searchBox) searchBox.classList.remove('is-loading');
         });
@@ -924,7 +776,7 @@ function selectSearchItem(item) {
     currentPlaceName = name;
     currentRoadAddress = addr;
 
-    map.setCenter(new kakao.maps.LatLng(lat, lng));
+    map.setCenter(lat, lng);
     map.setLevel(2);
     showToast(`'${name}'(으)로 이동했습니다.`);
 }
@@ -935,26 +787,24 @@ document.getElementById('search-results').addEventListener('click', (e) => {
     selectSearchItem(item);
 });
 
-function searchPlaces(keyword) {
-    if (!placesService) {
-        showToast("검색 서비스를 불러오지 못했습니다.");
-        return;
-    }
-
-    placesService.keywordSearch(keyword, (data, status) => {
-        if (status === kakao.maps.services.Status.OK) {
-            const place = data[0]; // Take first result
-            currentPlaceName = place.place_name;
-            currentRoadAddress = place.road_address_name || place.address_name;
-
-            const moveLatLon = new kakao.maps.LatLng(place.y, place.x);
-            map.setCenter(moveLatLon);
-            map.setLevel(2);
-            showToast(`'${place.place_name}'(으)로 이동했습니다.`);
-        } else {
-            showToast("장소를 찾을 수 없습니다.");
+async function searchPlaces(keyword) {
+    try {
+        const data = await map.searchPlaces(keyword, { limit: 1 });
+        if (data.length === 0) {
+            showToast("??? ?? ? ????.");
+            return;
         }
-    });
+
+        const place = data[0];
+        currentPlaceName = place.place_name;
+        currentRoadAddress = place.road_address_name || place.address_name;
+        map.setCenter(Number(place.y), Number(place.x));
+        map.setLevel(2);
+        showToast(`'${place.place_name}'(?)? ??????.`);
+    } catch (error) {
+        console.error('Place search failed:', error);
+        showToast("?? ???? ???? ?????.");
+    }
 }
 
 function resolveGilmaruAddress(address, isSilent = false, parsedAddress = null) {
@@ -974,7 +824,7 @@ function resolveGilmaruAddress(address, isSilent = false, parsedAddress = null) 
     const lat = originLat + finalY * subBlockSize + (subBlockSize / 2); // Center of grid
     const lng = originLon + finalX * subBlockSize + (subBlockSize / 2);
 
-    map.setCenter(new kakao.maps.LatLng(lat, lng));
+    map.setCenter(lat, lng);
     map.setLevel(2);
     if (!isSilent) showToast("주소 위치로 이동했습니다.");
     return true;
@@ -991,7 +841,7 @@ function moveToMyLocation() {
             const lon = position.coords.longitude;
             currentPlaceName = null;
             currentRoadAddress = null;
-            map.setCenter(new kakao.maps.LatLng(lat, lon));
+            map.setCenter(lat, lon);
             map.setLevel(2);
             showToast("현재 위치로 이동했습니다.");
         }, (err) => {
@@ -1015,7 +865,7 @@ function getLinkToCurrentPosition() {
     if (!addressText || addressText === "로딩중..." || addressText.includes("확대해서")) {
         // Fallback to calculation if text is not ready
         const center = map.getCenter();
-        const gilmaru = latLngToGilmaru(center.getLat(), center.getLng(), 1);
+        const gilmaru = latLngToGilmaru(center.lat, center.lng, 1);
         return `${window.location.href.split('?')[0]}?code=${getWordsFromCode(gilmaru.code).join(".")}`;
     }
 

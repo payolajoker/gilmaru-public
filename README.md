@@ -23,6 +23,7 @@ npm run dev
 선택 설정:
 
 - `VITE_KAKAO_JS_KEY`
+- `VITE_MAP_PROVIDER` (`auto` or `open`)
 - `gilmaru.config.local.json`
 
 예시 파일:
