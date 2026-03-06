@@ -1,7 +1,9 @@
-export const sampleWordA = ['바람', '하늘', '노을', '새벽'];
-export const sampleWordB = ['숲길', '강변', '마을', '광장'];
-export const sampleWordC = ['작은', '푸른', '따뜻한', '고요한'];
-export const sampleWordD = ['쉼터', '다리', '언덕', '정원'];
+// Curated from the current runtime word groups in word_data.js.
+// "Emotional" is subjective, so these are intentionally small representative picks.
+export const sampleWordA = ['봄날'];
+export const sampleWordB = ['안개'];
+export const sampleWordC = ['하늘'];
+export const sampleWordD = ['설렘'];
 
 export const sampleWordGroups = {
     A: sampleWordA,

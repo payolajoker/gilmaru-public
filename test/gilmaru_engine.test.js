@@ -14,12 +14,12 @@ describe('Gilmaru engine', () => {
     });
 
     it('should resolve words from injected groups', () => {
-        const words = resolver.getWordsFromCode('A001.B002.C003.D004');
-        expect(words).toEqual([sampleWordA[0], sampleWordB[1], sampleWordC[2], sampleWordD[3]]);
+        const words = resolver.getWordsFromCode('A001.B001.C001.D001');
+        expect(words).toEqual([sampleWordA[0], sampleWordB[0], sampleWordC[0], sampleWordD[0]]);
     });
 
     it('should resolve a full address from injected groups', () => {
-        expect(resolver.fullAddress('A002.B003.C004.D001')).toBe('하늘 마을 고요한 쉼터');
+        expect(resolver.fullAddress('A001.B001.C001.D001')).toBe('봄날 안개 하늘 설렘');
     });
 
     it('should return fallback values for invalid or incomplete codes', () => {

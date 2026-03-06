@@ -4,7 +4,7 @@ This directory contains a safe subset of the Gilmaru repository that can be revi
 
 Included:
 - Pure engine code with no bundled runtime word database
-- Small hand-written sample word pack for demos and tests
+- Tiny sample word pack curated from the current runtime groups
 - Standalone browser demo with no Kakao dependency
 - Engine-focused tests
 - Public-interest and licensing strategy documents
@@ -30,5 +30,5 @@ npm run build
 ## What This Bundle Demonstrates
 
 - The Gilmaru engine can run without the blocked runtime word database
-- A safe sample word pack can be injected into the resolver
+- A curated sample word pack can be injected into the resolver
 - A separate public repository can begin as engine-plus-demo before the final data strategy is settled

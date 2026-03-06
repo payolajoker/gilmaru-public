@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderPackGroups();
   updateGeneratedPreview(37.5665, 126.9780);
-  updateLookupPreview('A001.B002.C003.D004');
+  updateLookupPreview('A001.B001.C001.D001');
 
   coordsForm?.addEventListener('submit', (event) => {
     event.preventDefault();
