@@ -4,6 +4,13 @@
 이 공개 저장소에는 실제 앱 코드, 단어 데이터, 생성 스크립트, 테스트, 공개
 프로젝트 문서가 함께 들어갑니다.
 
+## 공개 저장소 출처
+
+- 이 저장소는 유지보수자의 별도 작업용 원본 워크스페이스를 공개용으로 추출한 export입니다.
+- 현재 이 환경에서 확인된 원본 폴더는 `D:\payolajoker_git\gilmaru` 입니다.
+- 원본 스냅샷, 추출 시각, 재현 경로는 [EXPORT_PROVENANCE.md](./EXPORT_PROVENANCE.md)에 기록합니다.
+- 다음 export에도 유지되어야 하는 변경은 공개 저장소만이 아니라 원본 저장소의 export 스크립트나 템플릿에도 같이 반영해야 합니다.
+
 ## 포함 범위
 
 - 실제 앱 런타임: `app.js`, `gilmaru_core.js`, `word_data.js`
@@ -80,6 +87,7 @@ npm run build
 
 ## 문서
 
+- [공개 저장소 출처 기록](./EXPORT_PROVENANCE.md)
 - [공익 오픈소스 선언문](./docs/public-good-manifesto.md)
 - [오픈 라이선스 전략](./docs/open-license-strategy.md)
 - [권리관계 표](./docs/rights-inventory.md)

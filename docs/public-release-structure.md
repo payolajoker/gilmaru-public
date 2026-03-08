@@ -29,7 +29,19 @@
 - `gilmaru.config.local.json`
 - `public-release/`, `public-release-template/`
 
-## 2. 생성 방식
+## 2. 원본 저장소와 공개 저장소의 관계
+
+현재 유지보수자의 로컬 작업 환경에서:
+
+- 원본 작업 저장소: `D:\payolajoker_git\gilmaru`
+- 공개 저장소 워크스페이스: `D:\payolajoker_git\gilmaru-public-release`
+
+즉, 공개 저장소는 원본 저장소의 `source of truth` 자체가 아니라,
+원본에서 추출된 공개용 export로 취급해야 한다.
+
+이 관계는 공개 저장소 루트의 `EXPORT_PROVENANCE.md`에 함께 보관한다.
+
+## 3. 생성 방식
 
 [scripts/prepare-public-release.cjs](/D:/payolajoker_git/gilmaru/scripts/prepare-public-release.cjs#L1)가 메인 저장소의 tracked 파일과 공개용 추가 메타 파일을 묶어서 `public-release/`를 다시 만든다.
 
@@ -55,8 +67,13 @@
 - [docs/licenses/data.md](/D:/payolajoker_git/gilmaru/docs/licenses/data.md)
 - [docs/licenses/docs.md](/D:/payolajoker_git/gilmaru/docs/licenses/docs.md)
 
-## 3. 운영 규칙
+## 4. 운영 규칙
 
 - 공개 저장소 후보는 `public-release/`를 기준으로 검증한다.
 - 메인 저장소는 계속 작업용 저장소로 남을 수 있다.
 - 공개 저장소는 별도 Git 원격으로 운영한다.
+- 공개 저장소에서 직접 수정한 내용이 다음 export에도 남아야 한다면,
+  원본 저장소의 export 스크립트나 `public-release-template/`에도 같은
+  변경을 반영해야 한다.
+- export 시점의 source HEAD, 로컬 경로, clean/dirty 상태는 `EXPORT_PROVENANCE.md`
+  로 함께 남긴다.

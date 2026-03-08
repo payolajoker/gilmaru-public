@@ -2,6 +2,15 @@
 
 Current release mode: full public repository candidate
 
+Source of truth for export preparation:
+
+- The maintainer's current local source workspace is the sibling folder
+  `D:\payolajoker_git\gilmaru`.
+- This published repository is a public export of that source workspace, not
+  the only authoring location.
+- The currently observed source snapshot and local status are recorded in
+  `EXPORT_PROVENANCE.md`.
+
 Included in the public export:
 
 - actual application code

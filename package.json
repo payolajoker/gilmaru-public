@@ -14,8 +14,23 @@
     "test:e2e": "playwright test",
     "validate:data": "node scripts/validate-point-pack.mjs"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "gilmaru",
+    "korean",
+    "maps",
+    "geocoding",
+    "pwa",
+    "accessibility"
+  ],
+  "author": "payolajoker",
+  "homepage": "https://payolajoker.github.io/gilmaru-public/",
+  "bugs": {
+    "url": "https://github.com/payolajoker/gilmaru-public/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/payolajoker/gilmaru-public.git"
+  },
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "@playwright/test": "^1.58.2",

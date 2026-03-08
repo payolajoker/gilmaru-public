@@ -1,5 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
+const previewPort = process.env.PLAYWRIGHT_PREVIEW_PORT ?? '43173';
+const rawPort = process.env.PLAYWRIGHT_RAW_PORT ?? '43174';
+
 export default defineConfig({
   testDir: './test/e2e',
   testMatch: '**/*.spec.js',
@@ -12,7 +15,7 @@ export default defineConfig({
       name: 'built-dist',
       testIgnore: ['**/open-map.spec.js', '**/open-fallback.spec.js'],
       use: {
-        baseURL: 'http://127.0.0.1:4173/gilmaru-public/',
+        baseURL: `http://127.0.0.1:${previewPort}/gilmaru-public/`,
         headless: true,
         serviceWorkers: 'block',
       },
@@ -21,7 +24,7 @@ export default defineConfig({
       name: 'raw-root',
       testIgnore: ['**/open-map.spec.js', '**/open-fallback.spec.js'],
       use: {
-        baseURL: 'http://127.0.0.1:4174/',
+        baseURL: `http://127.0.0.1:${rawPort}/`,
         headless: true,
         serviceWorkers: 'block',
       },
@@ -30,7 +33,7 @@ export default defineConfig({
       name: 'open-fallback',
       testMatch: '**/open-map.spec.js',
       use: {
-        baseURL: 'http://127.0.0.1:4174/',
+        baseURL: `http://127.0.0.1:${rawPort}/`,
         headless: true,
         serviceWorkers: 'block',
       },
@@ -38,15 +41,15 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
-      port: 4173,
+      command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${previewPort} --strictPort`,
+      port: Number(previewPort),
       reuseExistingServer: false,
       timeout: 120_000,
     },
     {
-      command: 'python -m http.server 4174 --bind 127.0.0.1',
-      port: 4174,
-      reuseExistingServer: true,
+      command: `python -m http.server ${rawPort} --bind 127.0.0.1`,
+      port: Number(rawPort),
+      reuseExistingServer: false,
       timeout: 120_000,
     },
   ],
